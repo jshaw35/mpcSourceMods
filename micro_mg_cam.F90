@@ -800,23 +800,28 @@ subroutine micro_mg_cam_init(pbuf2d)
 !           'C', isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
 
    ! Declare new coordinate for SLF variables ! jks 20200401
-   call add_hist_coord('isotherms_mpc', nisotherms_mpc,                                                       &
-            'mixed-phase cloud isotherms (data within 1.0C)', 'C',                                            &
-            isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds,         &
-            vertical_coord=.true.)
+   ! call add_hist_coord('isotherms_mpc', nisotherms_mpc,                                                       &
+   !          'mixed-phase cloud isotherms (data within 1.0C)', 'C',                                            &
+   !          isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds,         &
+   !          vertical_coord=.true.)
 
    ! Define new variables
 
-   ! not sure why this is throwing an error here: There is no matching specific subroutine for this generic subroutine call
-   call addfld('SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
-            flag_xyfill=.true., fill_value=R_UNDEF)
-   call addfld('CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)',                 &
-            flag_xyfill=.true., fill_value=R_UNDEF)
+   ! jks cuz
+   call addfld ('SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' )
+   call addfld ('CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)'                         )
+   call addfld ('CT_SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' ) ! jks
+   call addfld ('CT_CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)'                         ) ! jks
 
-   call addfld('CT_SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
-            flag_xyfill=.true., fill_value=R_UNDEF)
-   call addfld('CT_CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)',                 &
-            flag_xyfill=.true., fill_value=R_UNDEF)
+   ! call addfld('SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
+   !          flag_xyfill=.true., fill_value=R_UNDEF)
+   ! call addfld('CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)',                 &
+   !          flag_xyfill=.true., fill_value=R_UNDEF)
+
+   ! call addfld('CT_SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
+   !          flag_xyfill=.true., fill_value=R_UNDEF)
+   ! call addfld('CT_CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)',                 &
+   !          flag_xyfill=.true., fill_value=R_UNDEF)
 
    ! does this variable also take the xyfill? not need as an output, just within the loop
 !   call addfld ('CLDTAU',               horiz_only,         'A', ' ', 'Cloud optical thickness'                                    )
@@ -3302,20 +3307,21 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   ct_slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   ct_cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
+   ! slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
+   ! cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
+   ! ct_slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
+   ! ct_cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp   
+   
 
-   ! slfxcld_isotm                     = 0._r8
+   slfxcld_isotm                     = 0._r8
    ! sadliqxcld_isotm                  = 0._r8
    ! sadicexcld_isotm                  = 0._r8
    ! bergoxcld_isotm                   = 0._r8
    ! bergsoxcld_isotm                  = 0._r8
-   ! cld_isotm                         = 0._r8
+   cld_isotm                         = 0._r8
 
-   ! ct_slfxcld_isotm                  = 0._r8 ! jks
-   ! ct_cld_isotm                      = 0._r8 ! jks
+   ct_slfxcld_isotm                  = 0._r8 ! jks
+   ct_cld_isotm                      = 0._r8 ! jks
 
    ! slfxcld_isotm_nonsim              = 0._r8
    ! sadliqxcld_isotm_nonsim           = 0._r8
@@ -3520,28 +3526,28 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    !SLF output - print to history files !zsm, jks
 
    ! New process jks
-   where (slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF) 
-      !! setting missing values to 0 (clear air)
-      slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   end where
+   ! where (slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF) 
+   !    !! setting missing values to 0 (clear air)
+   !    slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
+   ! end where
    call outfld('SLFXCLD_ISOTM',slfxcld_isotm    ,pcols,lchnk)  !!
 
-   where (cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-      !! setting missing values to 0 (clear air)
-      cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   end where
+   ! where (cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
+   !    !! setting missing values to 0 (clear air)
+   !    cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
+   ! end where
    call outfld('CLD_ISOTM',cld_isotm    ,pcols,lchnk)  !!
 
-   where (ct_slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-      !! setting missing values to 0 (clear air)
-      ct_slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   end where
+   ! where (ct_slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
+   !    !! setting missing values to 0 (clear air)
+   !    ct_slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
+   ! end where
    call outfld('CT_SLFXCLD_ISOTM',ct_slfxcld_isotm    ,pcols,lchnk)  !!
 
-   where (ct_cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-      !! setting missing values to 0 (clear air)
-      ct_cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   end where
+   ! where (ct_cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
+   !    !! setting missing values to 0 (clear air)
+   !    ct_cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
+   ! end where
    call outfld('CT_CLD_ISOTM',ct_cld_isotm    ,pcols,lchnk)  !!
 
    ! call outfld( 'SLFXCLD_ISOTM',        slfxcld_isotm,         pcols,lchnk )
