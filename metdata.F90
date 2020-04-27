@@ -872,7 +872,7 @@ contains
       enddo
     else
     
-      if (.not.has_ts) then
+      if (.not.has_ts .and. .not.met_nudge_only_uvps) then ! 
          if (masterproc) then
             write(iulog,*) 'get_ocn_ice_frcs: TS is not in the met dataset and cannot set ocnfrc and icefrc'
             write(iulog,*) ' try setting drydep_method to xactive_atm or table'
@@ -880,17 +880,23 @@ contains
          endif
       endif
 
-      do i = 1,ncol
+      !smb++
+      if (has_ts) then ! this boolean won't catch everything
+      !smb--
+         do i = 1,ncol
 
-         if ( met_ts(i,lchnk) < SHR_CONST_TKFRZ-2._r8 ) then
-            ocnfrc(i) = 0._r8
-            icefrc(i) = 1._r8 - lndfrc(i)
-         else
-            icefrc(i) = 0._r8
-            ocnfrc(i) = 1._r8 - lndfrc(i)
-         endif
+            if ( met_ts(i,lchnk) < SHR_CONST_TKFRZ-2._r8 ) then
+               ocnfrc(i) = 0._r8
+               icefrc(i) = 1._r8 - lndfrc(i)
+            else
+               icefrc(i) = 0._r8
+               ocnfrc(i) = 1._r8 - lndfrc(i)
+            endif
 
-      enddo
+         enddo
+      !smb++
+      endif
+      !smb--
     end if
 
     call outfld('MET_TS', met_ts(:ncol,lchnk) , ncol   ,lchnk   )

@@ -87,7 +87,6 @@ use cldfrc2m,       only: rhmini=>rhmini_const
 
 use cam_history,    only: addfld, add_default, outfld, horiz_only
 
-
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
 use scamMod,        only: single_column
@@ -144,8 +143,7 @@ character(len=8), parameter :: &      ! Constituent names
 integer, parameter :: nisotherms_mpc = 9
 real(r8), target :: isotherms_mpc_midpoints(nisotherms_mpc)
 real(r8), target :: isotherms_mpc_bounds(2,nisotherms_mpc)
-
-!--- !zsm, jks
+!--- !jks
 
 integer :: &
    ixcldliq = -1,      &! cloud liquid amount index
@@ -538,7 +536,6 @@ subroutine micro_mg_cam_register
 
       call pbuf_register_subcol('REI',         'micro_mg_cam_register', rei_idx)
       call pbuf_register_subcol('SADICE',      'micro_mg_cam_register', sadice_idx)
-      call pbuf_register_subcol('SADLIQ',      'micro_mg_cam_register', sadliq_idx) !zsm
       call pbuf_register_subcol('SADSNOW',     'micro_mg_cam_register', sadsnow_idx)
       call pbuf_register_subcol('REL',         'micro_mg_cam_register', rel_idx)
 
@@ -671,9 +668,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    integer :: ierr
    character(128) :: errstring     ! return status (non-blank for error return)
 
-   integer :: t, s, pr             ! loop through bins of temperature, slf,
-                                   ! and precip  !zsm, jks
-
+   integer :: t, s                 ! loop through bins of temperature and slf
 
    !-----------------------------------------------------------------------
 
@@ -774,72 +769,24 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('ICWMRST',    (/ 'lev' /), 'A', 'kg/kg',    'Prognostic in-stratus water mixing ratio'                )
    call addfld ('ICIMRST',    (/ 'lev' /), 'A', 'kg/kg',    'Prognostic in-stratus ice mixing ratio'                  )
 
-      ! SLF OUTPUT !zsm, jks 111119
-   !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! SLF OUTPUT  !jks 20200426
    ! WARNING: Must divide each in-cloud var by corresponding CLD_ISOTM var
    !          to adjust for raw SLF vars
    !          being monthly averages that include zeros at times/locations where
    !          no cloud detected on isotherm
    !          i.e. SLF_ISOTM = SLFXCLD_ISOTM / CLD_ISOTM
-
-   ! Fill in info on new dimensions
-
    do t=1,nisotherms_mpc
       isotherms_mpc_midpoints(t)=273.15_r8-5._r8*(nisotherms_mpc-t)
       isotherms_mpc_bounds(1,t)=isotherms_mpc_midpoints(t)-1.0_r8
       isotherms_mpc_bounds(2,t)=isotherms_mpc_midpoints(t)+1.0_r8
    end do
 
-! old isotherm declaration ! jks
-!   call add_hist_coord('isotherms_mpc', nisotherms_mpc, 'mixed-phase cloud isotherms (data within 1.0C)',  &
-!           'C', isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
-
-   ! Declare new coordinate for SLF variables ! jks 20200401
-   ! call add_hist_coord('isotherms_mpc', nisotherms_mpc,                                                       &
-   !          'mixed-phase cloud isotherms (data within 1.0C)', 'C',                                            &
-   !          isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds,         &
-   !          vertical_coord=.true.)
-
-   ! Define new variables
-
-   ! jks cuz
    call addfld ('SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' )
    call addfld ('CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)'                         )
    call addfld ('CT_SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' ) ! jks
    call addfld ('CT_CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)'                         ) ! jks
 
-   ! call addfld('SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
-   !          flag_xyfill=.true., fill_value=R_UNDEF)
-   ! call addfld('CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)',                 &
-   !          flag_xyfill=.true., fill_value=R_UNDEF)
-
-   ! call addfld('CT_SLFXCLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)',                 &
-   !          flag_xyfill=.true., fill_value=R_UNDEF)
-   ! call addfld('CT_CLD_ISOTM', (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)',                 &
-   !          flag_xyfill=.true., fill_value=R_UNDEF)
-
-   ! does this variable also take the xyfill? not need as an output, just within the loop
-!   call addfld ('CLDTAU',               horiz_only,         'A', ' ', 'Cloud optical thickness'                                    )
-   
-   ! call addfld ('SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' )
-   ! call addfld ('SADLIQXCLD_ISOTM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean droplet surface area density near isotherm * CLD_ISOTM (discard below thick cloud)')
-   ! call addfld ('SADICEXCLD_ISOTM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean ice surface area density near isotherm * CLD_ISOTM (discard below thick cloud)'    )
-   ! call addfld ('BERGOXCLD_ISOTM',      (/'isotherms_mpc'/), 'A', ' ', 'Mean BERGO near isotherm * CLD_ISOTM (discard below thick cloud)'                       )
-   ! call addfld ('BERGSOXCLD_ISOTM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean BERGSO near isotherm * CLD_ISOTM (discard below thick cloud)'                      )
-   ! call addfld ('CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)'                         )
-
-   ! call addfld ('CT_SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' ) ! jks
-   ! call addfld ('CT_CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)'                         ) ! jks
-
-   ! call addfld ('SLFXCLD_ISOTM_NONSIM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean supercooled liquid fraction near isotherm * CLD_ISOTM_NONSIM' )
-   ! call addfld ('SADLIQXCLD_ISOTM_NONSIM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean droplet surface area density near isotherm * CLD_ISOTM_NONSIM')
-   ! call addfld ('SADICEXCLD_ISOTM_NONSIM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean ice surface area density near isotherm * CLD_ISOTM_NONSIM'    )
-   ! call addfld ('BERGOXCLD_ISOTM_NONSIM',      (/'isotherms_mpc'/), 'A', ' ', 'Mean BERGO near isotherm * CLD_ISOTM_NONSIM'                       )
-   ! call addfld ('BERGSOXCLD_ISOTM_NONSIM',     (/'isotherms_mpc'/), 'A', ' ', 'Mean BERGSO near isotherm * CLD_ISOTM_NONSIM'                      )
-   ! call addfld ('CLD_ISOTM_NONSIM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm'                                )
-
-   ! call addfld ('CLDTAU',               (/ 'lev' /),         'A', ' ', 'Cloud optical thickness'                                    )
-   !--- !zsm, jks
 
    ! MG microphysics diagnostics
    call addfld ('QCSEVAP',    (/ 'lev' /), 'A', 'kg/kg/s',  'Rate of evaporation of falling cloud water'              )
@@ -874,44 +821,6 @@ subroutine micro_mg_cam_init(pbuf2d)
       call addfld ('QRSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Rain mixing ratio tendency from sedimentation'           )
       call addfld ('QSSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Snow mixing ratio tendency from sedimentation'           )
    end if
-
-!AL MG microphysics diagnostics number tendencies
-   call addfld ('NNUCCCO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency immersion freezing'       ) 
-   call addfld ('NNUCCTO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency contact freezing'         )
-   call addfld ('NPSACWSO ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency accretion by snow'        )
-   call addfld ('NSUBCO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency evaporation of droplet'   )
-   call addfld ('NPRAO    ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency accretion'                )
-   call addfld ('NPRC1O   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency autoconversion'           )
-   call addfld ('NQCSEDTEN',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency sedimentation'            )
-   call addfld ('NQISEDTEN',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency sedimentation'            )
-   call addfld ('NMELTO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency melting'                  )
-   call addfld ('NIMELTO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency melting'                  )
-   call addfld ('NHOMOO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tendency homogeneous freezing'     )
-   call addfld ('NIHOMOO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency homogeneous freezing'     )
-   call addfld ('NSACWIO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency from HM'                  )
-   call addfld ('NSUBIO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency evaporation'              )
-   call addfld ('NPRCIO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency autoconversion snow'      )
-   call addfld ('NPRAIO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tendency accretion snow'           )
-   call addfld ('NNUDEPO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI deposition'                        )
-   call addfld ('NPCCNO   ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC activation'                        )
-   call addfld ('NPCCNO2  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC activation'                        )
-   call addfld ('NNUCCDO  ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI nuccleation'                       )
-   call addfld ('NCTNCONS ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tuning: conservation of nc '       )
-   call addfld ('NCTNNBMN ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tuning: minimum nc'                )
-   call addfld ('NCTNSZMN ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tuning: minimum slope parameter'   )
-   call addfld ('NCTNSZMX ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tuning: maximum slope parameter'   )
-   call addfld ('NCTNNCLD ',(/ 'lev' /), 'A', '1/kg/s  ', 'NC tuning: removal of nc for zero cloud water'  )
-   call addfld ('NITNCONS ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tuning: conservation of ni '                 )
-   call addfld ('NITNSZMN ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tuning: minimum slope parameter'             )
-   call addfld ('NITNSZMX ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tuning: maximum slope parameter'             )
-   call addfld ('NITNNCLD ',(/ 'lev' /), 'A', '1/kg/s  ', 'NI tuning: removal of nI for zero cloud ice'    )
-   call addfld ('MNUDEPO  ',(/ 'lev' /), 'A', 'kg/kg/s ', 'Mixing ratio deposition'                        )
-   call addfld ('MPDNLIQ  ',(/ 'lev' /), 'A', '1/kg/s  ', 'CLDLIQ number tendency - Morrison microphysics' )
-   call addfld ('MPDNICE  ',(/ 'lev' /), 'A', '1/kg/s  ', 'CLDICE number tendency - Morrison microphysics' )
-   call addfld ('FRZR     ',(/ 'lev' /), 'A', 'kg/kg/s  ', 'Mass freezing rain to snow'    )
-   call addfld ('NFRZR    ',(/ 'lev' /), 'A', '1/kg/s ', 'Number freezing rain to snow' )
-   call addfld ('MNUCCRI  ',(/ 'lev' /), 'A', 'kg/kg/s  ', 'Mass freezing rain to ice'  )
-   call addfld ('NNUCCRI  ',(/ 'lev' /), 'A', '1/kg/s  ', 'Number freezing rain to ice' )
 
    ! History variables for CAM5 microphysics
    call addfld ('MPDT',       (/ 'lev' /), 'A', 'W/kg',     'Heating tendency - Morrison microphysics'                )
@@ -968,15 +877,6 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    call addfld ('FCTL',        horiz_only,   'A', 'fraction', 'Fractional occurrence of cloud top liquid'                         )
    call addfld ('FCTI',        horiz_only,   'A', 'fraction', 'Fractional occurrence of cloud top ice'                            )
-   !++IH
-   !For comparing to Bernartz CDNC concentrations
-!akc6   call addfld ('ACTNL_B    ', horiz_only, 'A', 'Micron  ', 'Average Cloud Top droplet number (Bennartz)'                         )
-   call addfld ('ACTNL_B    ', horiz_only, 'A', 'm-3',  'Average Cloud Top   droplet number (Bennartz)'                       )
-   call addfld ('FCTL_B     ', horiz_only, 'A', 'fraction',  'Fractional occurrence of cloud top liquid (Bennartz)'           )
-!ak6+
-   call addfld ('CCN_B      ', horiz_only, 'A', 'm-3',  'Average Cloud Top liquid CCN (Bennartz)'                             )
-!ak6-
-   !--IH
 
    ! New frequency arrays for mixed phase and supercooled liquid (only and mixed) for (a) Cloud Top and (b) everywhere..
    call addfld ('FREQM',       (/ 'lev' /),  'A', 'fraction', 'Fractional occurrence of mixed phase'                              )
@@ -1074,30 +974,12 @@ subroutine micro_mg_cam_init(pbuf2d)
       call add_default ('FREQS    ', 1, ' ')
       call add_default ('FREQL    ', 1, ' ')
       call add_default ('FREQI    ', 1, ' ')
-      !++IH (Bennartz CDNC comparison) and extra clouds diags
-      ! made default for NorESM
-      call add_default ('ACTNL     ', 1, ' ')
-      call add_default ('ACTREL     ', 1, ' ')
-      call add_default ('FCTL    ', 1, ' ')
-      call add_default ('ACTNI     ', 1, ' ')
-      call add_default ('ACTREI     ', 1, ' ')
-      call add_default ('FCTI    ', 1, ' ')
-      !These are for comparing to Bennartz
-      call add_default ('FCTL_B    ', 1, ' ')
-      call add_default ('ACTNL_B     ', 1, ' ')
-      !--IH
-!akc6+
-      call add_default ('CCN_B       ', 1, ' ')
-!akc6-
       do m = 1, ncnst
          call cnst_get_ind(cnst_names(m), mm)
          call add_default(cnst_name(mm), 1, ' ')
          ! call add_default(sflxnam(mm),   1, ' ')
       end do
    end if
-
-   call add_default ('MG_SADICE',        1, ' ') !zsm
-   call add_default ('MG_SADLIQ',        1, ' ') !zsm
 
    if ( history_budget ) then
       call add_default ('EVAPSNOW ', budget_histfile, ' ')
@@ -1140,49 +1022,6 @@ subroutine micro_mg_cam_init(pbuf2d)
       call add_default ('CMEIOUT  ', budget_histfile, ' ')
       call add_default ('BERGSO   ', budget_histfile, ' ')
       call add_default ('BERGO    ', budget_histfile, ' ')
-!AL
-      call add_default ('NNUCCCO  ', budget_histfile, ' ')
-      call add_default ('NNUCCTO  ', budget_histfile, ' ')
-      call add_default ('NPSACWSO ', budget_histfile, ' ')
-      call add_default ('NSUBCO   ', budget_histfile, ' ')
-      call add_default ('NPRAO    ', budget_histfile, ' ')
-      call add_default ('NPRC1O   ', budget_histfile, ' ')
-      call add_default ('NQCSEDTEN', budget_histfile, ' ')
-      call add_default ('NQISEDTEN', budget_histfile, ' ')
-      call add_default ('NMELTO   ', budget_histfile, ' ')
-      call add_default ('NIMELTO  ', budget_histfile, ' ')
-      call add_default ('NHOMOO   ', budget_histfile, ' ')
-      call add_default ('NIHOMOO  ', budget_histfile, ' ')
-      call add_default ('NSACWIO  ', budget_histfile, ' ')
-      call add_default ('NSUBIO   ', budget_histfile, ' ')
-      call add_default ('NPRCIO   ', budget_histfile, ' ')
-      call add_default ('NPRAIO   ', budget_histfile, ' ')
-      call add_default ('NNUDEPO  ', budget_histfile, ' ')
-      call add_default ('MNUDEPO  ', budget_histfile, ' ')
-      call add_default ('NPCCNO   ', budget_histfile, ' ')
-      call add_default ('NPCCNO2  ', budget_histfile, ' ')
-      call add_default ('NNUCCDO  ', budget_histfile, ' ')
-
-      call add_default ('NCTNNCLD ', budget_histfile, ' ')
-      call add_default ('NITNCONS ', budget_histfile, ' ')
-      call add_default ('NITNNCLD ', budget_histfile, ' ')
-      call add_default ('NCTNSZMN ', budget_histfile,' ')
-      call add_default ('NCTNSZMX ', budget_histfile,' ')
-      call add_default ('NITNSZMN ', budget_histfile,' ')
-      call add_default ('NITNSZMX ', budget_histfile,' ')
-      select case (micro_mg_version)
-      case (1)
-         call add_default ('NCTNCONS ', budget_histfile, ' ')
-         call add_default ('NCTNNBMN ', budget_histfile, ' ')
-      case (2)
-         call add_default ('FRZR ', budget_histfile, ' ')
-         call add_default ('NFRZR ', budget_histfile, ' ')
-         call add_default ('MNUCCRI ', budget_histfile, ' ')
-         call add_default ('NNUCCRI ', budget_histfile, ' ')
-      end select
-      call add_default ('MPDNLIQ  ', budget_histfile, ' ')
-      call add_default ('MPDNICE  ', budget_histfile, ' ')
-!AL
 
       call add_default(cnst_name(ixcldliq), budget_histfile, ' ')
       call add_default(cnst_name(ixcldice), budget_histfile, ' ')
@@ -1201,37 +1040,12 @@ subroutine micro_mg_cam_init(pbuf2d)
 
    end if
 
-      ! SLF OUTPUT !zsm, jks
-   call add_default ('SLFXCLD_ISOTM',        1, ' ') ! not sure if this could be 0? probably not
+   ! SLF OUTPUT !zsm, jks
+   call add_default ('SLFXCLD_ISOTM',        1, ' ')
    call add_default ('CLD_ISOTM',            1, ' ')
    call add_default ('CT_SLFXCLD_ISOTM',        1, ' ')
    call add_default ('CT_CLD_ISOTM',            1, ' ')
 
-   ! call add_default ('SLFXCLD_ISOTM',        1, ' ')
-   ! call add_default ('SADLIQXCLD_ISOTM',     1, ' ')
-   ! call add_default ('SADICEXCLD_ISOTM',     1, ' ')
-   ! call add_default ('BERGOXCLD_ISOTM',      1, ' ')
-   ! call add_default ('BERGSOXCLD_ISOTM',     1, ' ')
-   ! call add_default ('CLD_ISOTM',            1, ' ')
-
-   ! call add_default ('CT_SLFXCLD_ISOTM',        1, ' ')
-   ! call add_default ('CT_CLD_ISOTM',            1, ' ')
-
-   ! call add_default ('SLFXCLD_ISOTM_NONSIM',        1, ' ')
-   ! call add_default ('SADLIQXCLD_ISOTM_NONSIM',     1, ' ')
-   ! call add_default ('SADICEXCLD_ISOTM_NONSIM',     1, ' ')
-   ! call add_default ('BERGOXCLD_ISOTM_NONSIM',      1, ' ')
-   ! call add_default ('BERGSOXCLD_ISOTM_NONSIM',     1, ' ')
-   ! call add_default ('CLD_ISOTM_NONSIM',            1, ' ')
-
-   ! call add_default ('CLD_SLF',                      1, ' ')
-   ! call add_default ('CLD_ISOTM_SLF',                1, ' ')
-
-   ! call add_default ('CLD_SLF_NONSIM',               1, ' ')
-   ! call add_default ('CLD_ISOTM_SLF_NONSIM',         1, ' ')
-
-   ! call add_default ('CLDTAU',               1, ' ')
-   !--- !zsm, jks
 
    ! physics buffer indices
    ast_idx      = pbuf_get_index('AST')
@@ -1321,7 +1135,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    ! Local variables
    integer :: ncol, nlev, mgncol
    integer :: lchnk                  !zsm, jks
-   integer, allocatable :: mgcols(:) ! Columns with microphysics performed !zsm, jks
+   integer, allocatable :: mgcols(:) ! Columns with microphysics performed
    real(r8), allocatable :: mgrlats(:) ! zsm, jks
 
    ! Find the number of levels used in the microphysics.
@@ -1334,16 +1148,16 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call micro_mg_get_cols1_0(ncol, nlev, top_lev, state%q(:,:,ixcldliq), &
            state%q(:,:,ixcldice), mgncol, mgcols)
    case (2)
-      call micro_mg_get_cols2_0(lchnk, ncol, nlev, top_lev, state%q(:,:,ixcldliq), & ! jks
+      call micro_mg_get_cols2_0(lchnk, ncol, nlev, top_lev, state%q(:,:,ixcldliq), &
            state%q(:,:,ixcldice), state%q(:,:,ixrain), state%q(:,:,ixsnow), &
-           mgncol, mgcols, mgrlats) !jks
+           mgncol, mgcols, mgrlats)
    end select
 
-   call micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev) !jks
+   call micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev)
 
 end subroutine micro_mg_cam_tend
 
-subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev) !jks
+subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev)
 
    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
         mg_liq_props, mg_ice_props, avg_diameter, rhoi, rhosn, rhow, rhows, &
@@ -1406,28 +1220,11 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
    real(r8), pointer :: des(:,:)          ! Snow effective diameter (m)
 
-      ! SLF Calculation - define new variables, etc !zsm, jks
+   ! SLF Calculation - define new variables, etc !zsm, jks
    real(r8) :: slfxcld_isotm(pcols,nisotherms_mpc)
    real(r8) :: cld_isotm(pcols,nisotherms_mpc)
    real(r8) :: ct_slfxcld_isotm(pcols,nisotherms_mpc) ! jks
    real(r8) :: ct_cld_isotm(pcols,nisotherms_mpc) ! jks
-
-   ! real(r8) :: slfxcld_isotm(pcols,nisotherms_mpc)
-   ! real(r8) :: sadliqxcld_isotm(pcols,nisotherms_mpc)
-   ! real(r8) :: sadicexcld_isotm(pcols,nisotherms_mpc)
-   ! real(r8) :: bergoxcld_isotm(pcols,nisotherms_mpc)
-   ! real(r8) :: bergsoxcld_isotm(pcols,nisotherms_mpc)
-   ! real(r8) :: cld_isotm(pcols,nisotherms_mpc)
-
-   ! real(r8) :: ct_slfxcld_isotm(pcols,nisotherms_mpc) ! jks
-   ! real(r8) :: ct_cld_isotm(pcols,nisotherms_mpc) ! jks
-
-   ! real(r8) :: slfxcld_isotm_nonsim(pcols,nisotherms_mpc)
-   ! real(r8) :: sadliqxcld_isotm_nonsim(pcols,nisotherms_mpc)
-   ! real(r8) :: sadicexcld_isotm_nonsim(pcols,nisotherms_mpc)
-   ! real(r8) :: bergoxcld_isotm_nonsim(pcols,nisotherms_mpc)
-   ! real(r8) :: bergsoxcld_isotm_nonsim(pcols,nisotherms_mpc)
-   ! real(r8) :: cld_isotm_nonsim(pcols,nisotherms_mpc)
 
    real(r8) :: cldtau(pcols,pver)
    real(r8) :: wgt
@@ -1521,41 +1318,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8), target :: nfice(state%psetcols,pver)
    real(r8), target :: qcrat(state%psetcols,pver)   ! qc limiter ratio (1=no limit)
 
-!AL
-   real(r8), target :: nnuccco(state%psetcols,pver)   ! immersion freezing
-   real(r8), target :: nnuccto(state%psetcols,pver)   ! contact freezing
-   real(r8), target :: npsacwso(state%psetcols,pver)  ! accr. snow
-   real(r8), target :: nsubco(state%psetcols,pver)    ! evaporation of droplet 
-   real(r8), target :: nprao(state%psetcols,pver)     ! accretion
-   real(r8), target :: nprc1o(state%psetcols,pver)    ! autoconversion
-   real(r8), target :: nqcsedten(state%psetcols,pver) ! nqc sedimentation tendency
-   real(r8), target :: nqisedten(state%psetcols,pver) ! nqc sedimentation tendency
-   real(r8), target :: nmelto(state%psetcols,pver)    ! melting of cloud ice
-   real(r8), target :: nhomoo(state%psetcols,pver)    ! homogeneos freezign cloud water
-   real(r8), target :: nimelto(state%psetcols,pver)   ! melting of cloud ice
-   real(r8), target :: nihomoo(state%psetcols,pver)   ! homogeneos freezign cloud water
-   real(r8), target :: nsacwio(state%psetcols,pver)   ! numb conc tend due to HM ice multiplication
-   real(r8), target :: nsubio(state%psetcols,pver)    ! evaporation of cloud ice number (sublimation?)
-   real(r8), target :: nprcio(state%psetcols,pver)    ! numb conc tend due to auto of cloud ice to snow
-   real(r8), target :: npraio(state%psetcols,pver)    ! numb conc tend due to accr of cloud ice by snow
-   real(r8), target :: nnudepo(state%psetcols,pver)   ! deposition?
-   real(r8), target :: npccno(state%psetcols,pver)    ! activation
-   real(r8), target :: nnuccdo(state%psetcols,pver)   ! nucleation (ice)
-   real(r8), target :: mnudepo(state%psetcols,pver)   ! deposition
-   real(r8), target :: nctncons(state%psetcols,pver)   ! correction term
-   real(r8), target :: nctnnbmn(state%psetcols,pver)   ! correction if below minimum number
-   real(r8), target :: nctnszmn(state%psetcols,pver)   ! gamma adjustment (liquid)
-   real(r8), target :: nctnszmx(state%psetcols,pver)   ! gamma adjustment (liquid)
-   real(r8), target :: nctnncld(state%psetcols,pver)   ! correction for no cloud
-   real(r8), target :: nitncons(state%psetcols,pver)   ! numerical conservation check in sub-time step
-   real(r8), target :: nitnszmn(state%psetcols,pver)   ! gamma-adjustment (ice)
-   real(r8), target :: nitnszmx(state%psetcols,pver)   ! gamma-adjustment (ice)
-   real(r8), target :: nitnncld(state%psetcols,pver)   ! corrrection for no cloud
-   real(r8), target :: frzr(state%psetcols,pver)       ! mass freezing rain ==>snow
-   real(r8), target :: nfrzr(state%psetcols,pver)      ! number freezing rain ==> snow
-   real(r8), target :: mnuccri(state%psetcols,pver)   ! mass freezing rain ==> ice 
-   real(r8), target :: nnuccri(state%psetcols,pver)   ! number freezing rain ==> ice 
-!AL
    ! Object that packs columns with clouds/precip.
    type(MGPacker) :: packer
 
@@ -1703,42 +1465,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    ! Heterogeneous-only version of mnuccdo.
    real(r8) :: mnuccdohet(state%psetcols,pver)
 
-!AL
-   real(r8), target :: packed_nnuccco(mgncol,nlev)   ! immersion freezing
-   real(r8), target :: packed_nnuccto(mgncol,nlev)   ! contact freezing
-   real(r8), target :: packed_npsacwso(mgncol,nlev)  ! accr. snow
-   real(r8), target :: packed_nsubco(mgncol,nlev)    ! evaporation of droplet 
-   real(r8), target :: packed_nprao(mgncol,nlev)     ! accretion
-   real(r8), target :: packed_nprc1o(mgncol,nlev)    ! autoconversion
-   real(r8), target :: packed_nqcsedten(mgncol,nlev) ! nqc sedimentation tendency
-   real(r8), target :: packed_nqisedten(mgncol,nlev) ! nqc sedimentation tendency
-   real(r8), target :: packed_nmelto(mgncol,nlev)    ! melting of cloud ice
-   real(r8), target :: packed_nhomoo(mgncol,nlev)    ! homogeneos freezign cloud water
-   real(r8), target :: packed_nimelto(mgncol,nlev)   ! melting of cloud ice
-   real(r8), target :: packed_nihomoo(mgncol,nlev)   ! homogeneos freezign cloud water
-   real(r8), target :: packed_nsacwio(mgncol,nlev)   ! numb conc tend due to HM ice multiplication
-   real(r8), target :: packed_nsubio(mgncol,nlev)    ! evaporation of cloud ice number (sublimation?)
-   real(r8), target :: packed_nprcio(mgncol,nlev)    ! numb conc tend due to auto of cloud ice to snow
-   real(r8), target :: packed_npraio(mgncol,nlev)    ! numb conc tend due to accr of cloud ice by snow
-   real(r8), target :: packed_nnudepo(mgncol,nlev)   ! deposition?
-   real(r8), target :: packed_npccno(mgncol,nlev)    ! activation
-   real(r8), target :: packed_nnuccdo(mgncol,nlev)   ! nucleation (ice)
-   real(r8), target :: packed_mnudepo(mgncol,nlev)   ! deposition
-   real(r8), target :: packed_nctncons(mgncol,nlev)   ! correction term
-   real(r8), target :: packed_nctnnbmn(mgncol,nlev)   ! correction if below minimum number
-   real(r8), target :: packed_nctnszmn(mgncol,nlev)   ! gamma adjustment (liquid)
-   real(r8), target :: packed_nctnszmx(mgncol,nlev)   ! gamma adjustment (liquid)
-   real(r8), target :: packed_nctnncld(mgncol,nlev)   ! correction for no cloud
-   real(r8), target :: packed_nitncons(mgncol,nlev)   ! numerical conservation check in sub-time step
-   real(r8), target :: packed_nitnszmn(mgncol,nlev)   ! gamma-adjustment (ice)
-   real(r8), target :: packed_nitnszmx(mgncol,nlev)   ! gamma-adjustment (ice)
-   real(r8), target :: packed_nitnncld(mgncol,nlev)   ! corrrection for no cloud
-   real(r8), target :: packed_frzr(mgncol,nlev)       ! mass freezing rain ==> snow 
-   real(r8), target :: packed_nfrzr(mgncol,nlev)      ! number freezing rain ==> snow
-   real(r8), target :: packed_mnuccri(mgncol,nlev)    ! mass freezing rain ==> ice
-   real(r8), target :: packed_nnuccri(mgncol,nlev)    ! number freezing rain ==>ice
-!AL
-
    ! physics buffer fields for COSP simulator
    real(r8), pointer :: mgflxprc(:,:)     ! MG grid-box mean flux_large_scale_cloud_rain+snow at interfaces (kg/m2/s)
    real(r8), pointer :: mgflxsnw(:,:)     ! MG grid-box mean flux_large_scale_cloud_snow at interfaces (kg/m2/s)
@@ -1784,8 +1510,8 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8), pointer :: rel(:,:)          ! Liquid effective drop radius (microns)
    real(r8), pointer :: rei(:,:)          ! Ice effective drop size (microns)
    real(r8), pointer :: sadice(:,:)       ! Ice surface area density (cm2/cm3)
-   real(r8), pointer :: sadliq(:,:)       ! Ice surface area density (cm2/cm3) !zsm, jks
    real(r8), pointer :: sadsnow(:,:)      ! Snow surface area density (cm2/cm3)
+   real(r8), pointer :: sadliq(:,:)       ! Ice surface area density (cm2/cm3) !zsm, jks
 
 
    real(r8), pointer :: cmeliq(:,:)
@@ -1837,13 +1563,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8) :: fctl_grid(pcols)
 
    real(r8) :: ftem_grid(pcols,pver)
-   !++IH: 
-   real(r8) :: fctl_b(pcols) !frequency of occurrence for Bennartz 
-   real(r8) :: ctnl_b(pcols) !cdnc [/m3] for Bennartz
-!akc6+
-   real(r8) :: ccn_b(pcols)  !ccm [/m3] defined as for cdnc for Bennartz
-!akc6-
-   !--IH
 
    ! Variables for precip efficiency calculation
    real(r8) :: minlwp        ! LWP threshold
@@ -1981,7 +1700,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
 
    real(r8), pointer :: pckdptr(:,:)
-
 
    !-------------------------------------------------------------------------------
 
@@ -2321,42 +2039,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
       call post_proc%add_field(p(qcrat), p(packed_qcrat), fillvalue=1._r8)
    end if
 
-!AL
-   call post_proc%add_field(p(nnuccco), p(packed_nnuccco))
-   call post_proc%add_field(p(nnuccto), p(packed_nnuccto))
-   call post_proc%add_field(p(npsacwso), p(packed_npsacwso))
-   call post_proc%add_field(p(nsubco), p(packed_nsubco))
-   call post_proc%add_field(p(nprao), p(packed_nprao))
-   call post_proc%add_field(p(nprc1o), p(packed_nprc1o))
-   call post_proc%add_field(p(nqcsedten), p(packed_nqcsedten))
-   call post_proc%add_field(p(nqisedten), p(packed_nqisedten))
-   call post_proc%add_field(p(nmelto), p(packed_nmelto))
-   call post_proc%add_field(p(nhomoo), p(packed_nhomoo))
-   call post_proc%add_field(p(nimelto), p(packed_nimelto))
-   call post_proc%add_field(p(nihomoo), p(packed_nihomoo))
-   call post_proc%add_field(p(nsacwio), p(packed_nsacwio))
-   call post_proc%add_field(p(nsubio), p(packed_nsubio))
-   call post_proc%add_field(p(nprcio), p(packed_nprcio))
-   call post_proc%add_field(p(npraio), p(packed_npraio))
-   call post_proc%add_field(p(nnudepo), p(packed_nnudepo))
-   call post_proc%add_field(p(npccno), p(packed_npccno))
-   call post_proc%add_field(p(nnuccdo), p(packed_nnuccdo))
-   call post_proc%add_field(p(mnudepo), p(packed_mnudepo))
-   call post_proc%add_field(p(nctncons), p(packed_nctncons))
-   call post_proc%add_field(p(nctnnbmn), p(packed_nctnnbmn))
-   call post_proc%add_field(p(nctnszmn), p(packed_nctnszmn))
-   call post_proc%add_field(p(nctnszmx), p(packed_nctnszmx))
-   call post_proc%add_field(p(nctnncld), p(packed_nctnncld))
-   call post_proc%add_field(p(nitncons), p(packed_nitncons))
-   call post_proc%add_field(p(nitnszmn), p(packed_nitnszmn))
-   call post_proc%add_field(p(nitnszmx), p(packed_nitnszmx))
-   call post_proc%add_field(p(nitnncld), p(packed_nitnncld))
-   call post_proc%add_field(p(frzr), p(packed_frzr))
-   call post_proc%add_field(p(nfrzr), p(packed_nfrzr))
-   call post_proc%add_field(p(mnuccri), p(packed_mnuccri))
-   call post_proc%add_field(p(nnuccri), p(packed_nnuccri))
-!AL
-
    ! The following are all variables related to sizes, where it does not
    ! necessarily make sense to average over time steps. Instead, we keep
    ! the value from the last substep, which is what "accum_null" does.
@@ -2365,7 +2047,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call post_proc%add_field(p(rei), p(packed_rei), &
         fillvalue=25._r8, accum_method=accum_null)
    call post_proc%add_field(p(sadice), p(packed_sadice), &
-        accum_method=accum_null)
+        accum_method=accum_null)   
    call post_proc%add_field(p(sadliq), p(packed_sadliq), &
         accum_method=accum_null)                            !zsm, jks
    call post_proc%add_field(p(sadsnow), p(packed_sadsnow), &
@@ -2461,18 +2143,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
                  packed_nsout2, drout_dum, dsout2_dum, packed_freqs,packed_freqr,            &
                  packed_nfice, packed_prer_evap, do_cldice, errstring,                      &
                  packed_tnd_qsnow, packed_tnd_nsnow, packed_re_ice,             &
-                 packed_frzimm, packed_frzcnt, packed_frzdep, &
-!AL
-         packed_nnuccco, packed_nnuccto, packed_npsacwso, packed_nsubco, packed_nprao,       &
-         packed_nprc1o, packed_nqcsedten, packed_nqisedten, packed_nmelto, packed_nhomoo,    &
-         packed_nimelto, packed_nihomoo, packed_nsacwio, packed_nsubio, packed_nprcio,       &
-         packed_npraio, packed_nnudepo, packed_npccno, packed_nnuccdo, packed_mnudepo,       &
-         packed_nctncons, packed_nctnnbmn, packed_nctnszmn,                    &
-         packed_nctnszmx, packed_nctnncld, packed_nitncons, packed_nitnszmn,          &
-         packed_nitnszmx, packed_nitnncld)
-
-
-!AL
+                 packed_frzimm, packed_frzcnt, packed_frzdep)
 
          end select
       case(2)
@@ -2533,21 +2204,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
                  packed_freqs,           packed_freqr,           &
                  packed_nfice,           packed_qcrat,           &
                  errstring, &
-!AL right names?
-                  packed_nnuccco, packed_nnuccto,  &
-                  packed_npsacwso, packed_nsubco, packed_nprao,       &
-                  packed_nprc1o, packed_nqcsedten, &
-                  packed_nqisedten, packed_nmelto, packed_nhomoo,    &
-                  packed_nimelto, packed_nihomoo, packed_nsacwio,    &
-                  packed_nsubio, packed_nprcio,       &
-                  packed_npraio, packed_nnudepo,      & 
-                  packed_npccno, packed_nnuccdo, packed_mnudepo,       &
-                  packed_frzr,packed_nfrzr,        &
-                  packed_nnuccri, packed_mnuccri,               &
-                  packed_nctnszmx,packed_nctnszmn, &
-                  packed_nctnncld, packed_nitncons, &
-                  packed_nitnszmx, packed_nitnszmn, packed_nitnncld, &
-!AL
                  packed_tnd_qsnow,packed_tnd_nsnow,packed_re_ice,&
                  packed_prer_evap,                                     &
                  packed_frzimm,  packed_frzcnt,  packed_frzdep   )
@@ -3232,12 +2888,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    fctm_grid  = 0._r8
    fctsl_grid = 0._r8
    fctslm_grid= 0._r8
-   !++IH for comparign to Bennartz CDNC concentrations 
-   fctl_b  = 0._r8
-   ctnl_b  = 0._r8
-!akc6+
-   ccn_b   = 0._r8
-!akc6-
 
    do i = 1, ngrdcol
       do k = top_lev, pver
@@ -3284,161 +2934,81 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    if (nrain_idx > 0)  nrout_grid_ptr = nrout_grid
    if (nsnow_idx > 0)  nsout_grid_ptr = nsout_grid
 
+
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
    ! SLF CALCULATIONS !zsm/muge/itan
    ! Written by I Tan & M Komurcu as used in Komurcu et al JGR 2014
-   ! Bug fixes & modifications by Z S McGraw, Added to NorESM 111119 jks.
+   ! Bug fixes & modifications by Z S McGraw
    !
    ! Averages Supercooled Liquid Fraction (SLF) between all
    ! occurences of clouds on isotherms (-10C,-15C,-20C,
    ! -25C,-30C,-35C) EXCEPT where hidden below dense cloud
    ! (OD>3.0), for comparison with CALIOP observations as in
    ! Tan et al Science 2015
+
+   ! jks simplified version only calculates SLF and Cloud by isotherm 2020
+   ! Adds cloud top variable for the very highest layer containing appropriate cloud (CT_)
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   ! slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   ! cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   ! ct_slfxcld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp
-   ! ct_cld_isotm(1:pcols,1:nisotherms_mpc)                  = R_UNDEF ! jks mimicing cosp   
-   
-
    slfxcld_isotm                     = 0._r8
-   ! sadliqxcld_isotm                  = 0._r8
-   ! sadicexcld_isotm                  = 0._r8
-   ! bergoxcld_isotm                   = 0._r8
-   ! bergsoxcld_isotm                  = 0._r8
    cld_isotm                         = 0._r8
-
    ct_slfxcld_isotm                  = 0._r8 ! jks
    ct_cld_isotm                      = 0._r8 ! jks
 
-   ! slfxcld_isotm_nonsim              = 0._r8
-   ! sadliqxcld_isotm_nonsim           = 0._r8
-   ! sadicexcld_isotm_nonsim           = 0._r8
-   ! bergoxcld_isotm_nonsim            = 0._r8
-   ! bergsoxcld_isotm_nonsim           = 0._r8
-   ! cld_isotm_nonsim                  = 0._r8
-
-   ! cld_slf                           = 0._r8
-   ! cld_isotm_slf                     = 0._r8
-
-   ! cld_slf_nonsim                    = 0._r8
-   ! cld_isotm_slf_nonsim              = 0._r8
-
-   ! Calculate variables without accounting for satellite limitations below
-   ! thick clouds
-   ! do i=1,ncol
-   !  do k=1,pver
-   !   if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then
-
-   !       do t=1,nisotherms_mpc
-   !        if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
-   !           slfxcld_isotm_nonsim(i,t)        = slfxcld_isotm_nonsim(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
-            !  sadliqxcld_isotm_nonsim(i,t)     = sadliqxcld_isotm_nonsim(i,t) + sadliq_grid(i,k) * cld(i,k)
-            !  sadicexcld_isotm_nonsim(i,t)     = sadicexcld_isotm_nonsim(i,t) + sadice_grid(i,k) * cld(i,k)
-            !  bergoxcld_isotm_nonsim(i,t)      = bergoxcld_isotm_nonsim(i,t) + bergo_grid(i,k) * cld(i,k)
-            !  bergsoxcld_isotm_nonsim(i,t)     = bergsoxcld_isotm_nonsim(i,t) + bergso_grid(i,k) * cld(i,k)
-   !           cld_isotm_nonsim(i,t)            = cld_isotm_nonsim(i,t) + cld(i,k)
-   !        endif ! loose temperature conditional
-   !       end do
-   !   endif ! cld fract and mr conditional
-   !  enddo ! i, k loops
-   ! enddo ! i, k loops
 
    ! Calculate variables to match CALIOP (discard instances below thick cloud)
 
    do i=1,ncol
-     calioptest(i)=.true.
-   enddo
-
-   do i=1,ncol
-    do k=1,pver
-     if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then
-       if (calioptest(i)) then
-         if (cldtau(i,k).gt.3.0) calioptest(i)=.false.
-
-         do t=1,nisotherms_mpc
-          if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
-             slfxcld_isotm(i,t)        = slfxcld_isotm(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
-            !  sadliqxcld_isotm(i,t)     = sadliqxcld_isotm(i,t) + sadliq_grid(i,k) * cld(i,k)
-            !  sadicexcld_isotm(i,t)     = sadicexcld_isotm(i,t) + sadice_grid(i,k) * cld(i,k)
-            !  bergoxcld_isotm(i,t)      = bergoxcld_isotm(i,t) + bergo_grid(i,k) * cld(i,k)
-            !  bergsoxcld_isotm(i,t)     = bergsoxcld_isotm(i,t) + bergso_grid(i,k) * cld(i,k)
-             cld_isotm(i,t)            = cld_isotm(i,t) + cld(i,k)
-          endif ! loose temperature conditional
-         end do
-       endif ! cld opt thickness conditional
-     endif ! cld fract and mr conditional
+      calioptest(i)=.true.
+    enddo
+ 
+    do i=1,ncol
+     do k=1,pver
+      if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then
+        if (calioptest(i)) then
+          if (cldtau(i,k).gt.3.0) calioptest(i)=.false.
+ 
+          do t=1,nisotherms_mpc
+           if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
+              slfxcld_isotm(i,t)        = slfxcld_isotm(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
+              cld_isotm(i,t)            = cld_isotm(i,t) + cld(i,k)
+           endif ! loose temperature conditional
+          end do
+        endif ! cld opt thickness conditional
+      endif ! cld fract and mr conditional
+     enddo ! i, k loops
     enddo ! i, k loops
-   enddo ! i, k loops
-
-!##############################
-!## Cloudtop SLF Calculation ## ! jks 121919
-!##############################
-! to-do: declare output variables cloudtopslf and cloudtopCLD_isotm and parameter cloudtoptest 
-
-   do i=1,ncol ! grid box iteration
-      cloudtoptest=.true. ! reset cloudtop boolean for each new grid
-      do k=1,pver ! vertical layer iteration
-         if (cloudtoptest) then ! cloudtop test conditional
-            if (cldtau(i,k).gt.0.3 .and. cldtau(i,k).lt.3.0) then ! Cloud optical thickness range for which we trust obs
-               if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then ! cld fract and mr conditional
-                  cloudtoptest=.false. ! cloudtop found for this grid, move to the next
-                  do t=1,nisotherms_mpc ! bin the following variables by isotherm
-                     if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
-                        ct_slfxcld_isotm(i,t)   = ct_slfxcld_isotm(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
-                        ct_cld_isotm(i,t)       = ct_cld_isotm(i,t) + cld(i,k) ! why add and not just label the variable (only one iter)
-                     end if ! loose temperature conditional
-                  end do ! isotherm bin iteration
-               end if ! cld fract and mr conditional
-            end if ! Cloud optical thickness conditional
-         end if ! cloudtop test conditional
-      end do ! vertical layer iteration
-   end do ! grid box iteration 
-
-!##################################
-!## End Cloudtop SLF Calculation ##
-!##################################
-
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   !Calculate values for comparing with Bennartz 2017
-   do i = 1, ncol
-      do k = top_lev, pver
-         !Criterions for Bennartz (2017) to use values from a column
-         !1) 268 < T < 300 [K]
-         !2) liquid cloud fraction > 10 %
-         if (   liqcldf(i,k) > 0.1_r8   & 
-               .and. state_loc%t(i,k) > 268.0_r8 & 
-               .and. state_loc%t(i,k) < 300.0_r8 ) then   
-            !Save cloud fraction and in-cloud number conc
-            ctnl_b(i)  = icwnc(i,k) * liqcldf(i,k)
-            fctl_b(i)  = liqcldf(i,k)
-!akc6+
-            ccn_b(i)   = ncal(i,k) * liqcldf(i,k)
-!akc6-
-            exit !==> Go out to i=1,ncol-loop
-         end if
-         !--IH
-      end do
-   end do
-
-   call outfld( 'ACTREL'     , ctrel_grid,     pcols, lchnk )
-   call outfld( 'ACTREI'     , ctrei_grid,     pcols, lchnk )
-   call outfld( 'ACTNL'      , ctnl_grid,      pcols, lchnk )
-   call outfld( 'ACTNI'      , ctni_grid,      pcols, lchnk )
-   call outfld( 'FCTL'       , fctl_grid,      pcols, lchnk )
-   call outfld( 'FCTI'       , fcti_grid,      pcols, lchnk )
-   !++IH 
-   call outfld( 'FCTL_B'       , fctl_b,      pcols, lchnk )
-   call outfld( 'ACTNL_B'      , ctnl_b,      pcols, lchnk )
-!akc6+
-   call outfld( 'CCN_B'      , ccn_b,          pcols, lchnk )
-!akc6-
-   !--IH
+ 
+ !##############################
+ !## Cloudtop SLF Calculation ## ! jks 121919
+ !##############################
+ ! to-do: declare output variables cloudtopslf and cloudtopCLD_isotm and parameter cloudtoptest 
+ 
+    do i=1,ncol ! grid box iteration
+       cloudtoptest=.true. ! reset cloudtop boolean for each new grid
+       do k=1,pver ! vertical layer iteration
+          if (cloudtoptest) then ! cloudtop test conditional
+             if (cldtau(i,k).gt.0.3 .and. cldtau(i,k).lt.3.0) then ! Cloud optical thickness range for which we trust obs
+                if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then ! cld fract and mr conditional
+                   cloudtoptest=.false. ! cloudtop found for this grid, move to the next
+                   do t=1,nisotherms_mpc ! bin the following variables by isotherm
+                      if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
+                         ct_slfxcld_isotm(i,t)   = ct_slfxcld_isotm(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
+                         ct_cld_isotm(i,t)       = ct_cld_isotm(i,t) + cld(i,k) ! why add and not just label the variable (only one iter)
+                      end if ! loose temperature conditional
+                   end do ! isotherm bin iteration
+                end if ! cld fract and mr conditional
+             end if ! Cloud optical thickness conditional
+          end if ! cloudtop test conditional
+       end do ! vertical layer iteration
+    end do ! grid box iteration 
+ 
+ !##################################
+ !## End Cloudtop SLF Calculation ##
+ !##################################
+ 
 
    ! --------------------------------------------- !
    ! General outfield calls for microphysics       !
@@ -3515,99 +3085,11 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call outfld('CLDFSNOW',    cldfsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 
    !SLF output - print to history files !zsm, jks
-
-   ! New process jks
-   ! where (slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF) 
-   !    !! setting missing values to 0 (clear air)
-   !    slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   ! end where
    call outfld('SLFXCLD_ISOTM',slfxcld_isotm    ,pcols,lchnk)  !!
-
-   ! where (cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-   !    !! setting missing values to 0 (clear air)
-   !    cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   ! end where
    call outfld('CLD_ISOTM',cld_isotm    ,pcols,lchnk)  !!
-
-   ! where (ct_slfxcld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-   !    !! setting missing values to 0 (clear air)
-   !    ct_slfxcld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   ! end where
    call outfld('CT_SLFXCLD_ISOTM',ct_slfxcld_isotm    ,pcols,lchnk)  !!
-
-   ! where (ct_cld_isotm(:ncol,:nisotherms_mpc) .eq. R_UNDEF)
-   !    !! setting missing values to 0 (clear air)
-   !    ct_cld_isotm(:ncol,:nisotherms_mpc) = 0.0_r8
-   ! end where
    call outfld('CT_CLD_ISOTM',ct_cld_isotm    ,pcols,lchnk)  !!
-
-   ! call outfld( 'SLFXCLD_ISOTM',        slfxcld_isotm,         pcols,lchnk )
-   ! call outfld( 'SADLIQXCLD_ISOTM',     sadliqxcld_isotm,      pcols,lchnk )
-   ! call outfld( 'SADICEXCLD_ISOTM',     sadicexcld_isotm,      pcols,lchnk )
-   ! call outfld( 'BERGOXCLD_ISOTM',      bergoxcld_isotm,       pcols,lchnk )
-   ! call outfld( 'BERGSOXCLD_ISOTM',     bergsoxcld_isotm,      pcols,lchnk )
-   ! call outfld( 'CLD_ISOTM',            cld_isotm,             pcols,lchnk )
-
-   ! call outfld( 'CT_SLFXCLD_ISOTM',     ct_slfxcld_isotm,      pcols,lchnk ) ! jks normalized to cloud amount
-   ! call outfld( 'CT_CLD_ISOTM',         ct_cld_isotm,          pcols,lchnk ) ! jks
-
-   ! call outfld( 'SLFXCLD_ISOTM_NONSIM',        slfxcld_isotm_nonsim,        pcols,lchnk )
-   ! call outfld( 'SADLIQXCLD_ISOTM_NONSIM',     sadliqxcld_isotm_nonsim,     pcols,lchnk )
-   ! call outfld( 'SADICEXCLD_ISOTM_NONSIM',     sadicexcld_isotm_nonsim,     pcols,lchnk )
-   ! call outfld( 'BERGOXCLD_ISOTM_NONSIM',      bergoxcld_isotm_nonsim,      pcols,lchnk )
-   ! call outfld( 'BERGSOXCLD_ISOTM_NONSIM',     bergsoxcld_isotm_nonsim,     pcols,lchnk )
-   ! call outfld( 'CLD_ISOTM_NONSIM',            cld_isotm_nonsim,            pcols,lchnk )
-
-   ! call outfld( 'CLD_SLF',                      cld_slf,              pcols,lchnk )
-   ! call outfld( 'CLD_ISOTM_SLF',                cld_isotm_slf,        pcols,lchnk )
-
-   ! call outfld( 'CLD_SLF_NONSIM',               cld_slf_nonsim,              pcols,lchnk )
-   ! call outfld( 'CLD_ISOTM_SLF_NONSIM',         cld_isotm_slf_nonsim,        pcols,lchnk )
-
-   ! call outfld( 'CLDTAU',                       cldtau,             pcols,lchnk )
    !--- !zsm, jks
-
-!AL
-   call outfld ('NNUCCCO  ', nnuccco,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NNUCCTO  ', nnuccto,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPSACWSO ', npsacwso,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NSUBCO   ', nsubco,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPRAO    ', nprao,       psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPRC1O   ', nprc1o,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NQCSEDTEN', nqcsedten,   psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NQISEDTEN', nqisedten,   psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NMELTO   ', nmelto,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NIMELTO  ', nimelto,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NHOMOO   ', nhomoo,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NIHOMOO  ', nihomoo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NSACWIO  ', nsacwio,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NSUBIO   ', nsubio,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPRCIO   ', nprcio,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPRAIO   ', npraio,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NNUDEPO  ', nnudepo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPCCNO   ', npccno,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NPCCNO2  ', npccn,       psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NNUCCDO  ', nnuccdo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('MNUDEPO  ', mnudepo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NCTNCONS ', nctncons,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NCTNNBMN ', nctnnbmn,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NCTNSZMN ', nctnszmn,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NCTNSZMX ', nctnszmx,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NCTNNCLD ', nctnncld,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NITNCONS ', nitncons,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NITNSZMN ', nitnszmn,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NITNSZMX ', nitnszmx,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld ('NITNNCLD ', nitnncld,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   if (micro_mg_version > 1) then
-      call outfld ('FRZR   ', frzr,       psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-      call outfld ('NFRZR  ', nfrzr,      psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-      call outfld ('MNUCCRI', mnuccri,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-      call outfld ('NNUCCRI', nnuccri,    psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   end if
-
-   call outfld( 'MPDNLIQ  ', ncten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-   call outfld( 'MPDNICE  ', niten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp )
-!AL
 
 
    if (micro_mg_version > 1) then
