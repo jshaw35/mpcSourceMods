@@ -1287,8 +1287,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    snow_sed_idx = pbuf_get_index('SNOW_SED')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
-   prec_dp_idx  = pbuf_get_index('PREC_DP') !zsm
-   prec_sh_idx  = pbuf_get_index('PREC_SH') !zsm
+   ! prec_dp_idx  = pbuf_get_index('PREC_DP') !zsm, jks
+   ! prec_sh_idx  = pbuf_get_index('PREC_SH') !zsm, jks
 
    cmeliq_idx = pbuf_get_index('CMELIQ')
 
@@ -2752,8 +2752,8 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    prec_str = prec_pcw + prec_sed
    snow_str = snow_pcw + snow_sed
 
-   precc(:ncol)    = prec_dp(:ncol)  + prec_sh(:ncol) !zsm
-   precl(:ncol)    = prec_sed(:ncol) + prec_pcw(:ncol) !zsm
+   ! precc(:ncol)    = prec_dp(:ncol)  + prec_sh(:ncol) !zsm, jks
+   ! precl(:ncol)    = prec_sed(:ncol) + prec_pcw(:ncol) !zsm, jks
 
    icecldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver)
    liqcldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver)
@@ -3408,37 +3408,37 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
 
    ! Calculate variables without accounting for satellite limitations below
    ! thick clouds
-   do i=1,ncol
-    do k=1,pver
-     if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then
+   ! do i=1,ncol
+   !  do k=1,pver
+   !   if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then
 
-         do t=1,nisotherms_mpc
-          if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
-             slfxcld_isotm_nonsim(i,t)        = slfxcld_isotm_nonsim(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
-             sadliqxcld_isotm_nonsim(i,t)     = sadliqxcld_isotm_nonsim(i,t) + sadliq_grid(i,k) * cld(i,k)
-             sadicexcld_isotm_nonsim(i,t)     = sadicexcld_isotm_nonsim(i,t) + sadice_grid(i,k) * cld(i,k)
-             bergoxcld_isotm_nonsim(i,t)      = bergoxcld_isotm_nonsim(i,t) + bergo_grid(i,k) * cld(i,k)
-             bergsoxcld_isotm_nonsim(i,t)     = bergsoxcld_isotm_nonsim(i,t) + bergso_grid(i,k) * cld(i,k)
-             cld_isotm_nonsim(i,t)            = cld_isotm_nonsim(i,t) + cld(i,k)
-          endif ! loose temperature conditional
-         end do
+   !       do t=1,nisotherms_mpc
+   !        if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
+   !           slfxcld_isotm_nonsim(i,t)        = slfxcld_isotm_nonsim(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
+   !           sadliqxcld_isotm_nonsim(i,t)     = sadliqxcld_isotm_nonsim(i,t) + sadliq_grid(i,k) * cld(i,k)
+   !           sadicexcld_isotm_nonsim(i,t)     = sadicexcld_isotm_nonsim(i,t) + sadice_grid(i,k) * cld(i,k)
+   !           bergoxcld_isotm_nonsim(i,t)      = bergoxcld_isotm_nonsim(i,t) + bergo_grid(i,k) * cld(i,k)
+   !           bergsoxcld_isotm_nonsim(i,t)     = bergsoxcld_isotm_nonsim(i,t) + bergso_grid(i,k) * cld(i,k)
+   !           cld_isotm_nonsim(i,t)            = cld_isotm_nonsim(i,t) + cld(i,k)
+   !        endif ! loose temperature conditional
+   !       end do
 
-         ! output binned by supercooled liquid fraction
-         do s=1,nslfbins
-          if ((sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)).ge.slfbins_bounds(1,s)).and.(sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)).le.slfbins_bounds(2,s))) then
-             cld_slf_nonsim(i,s) = cld_slf_nonsim(i,s) + cld(i,k)
+   !       ! output binned by supercooled liquid fraction
+   !       do s=1,nslfbins
+   !        if ((sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)).ge.slfbins_bounds(1,s)).and.(sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)).le.slfbins_bounds(2,s))) then
+   !           cld_slf_nonsim(i,s) = cld_slf_nonsim(i,s) + cld(i,k)
 
-             do t=1,nisotherms_mpc
-              if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
-                cld_isotm_slf_nonsim(i,t,s) = cld_isotm_slf_nonsim(i,t,s) + cld(i,k)
-              end if ! loose temperature conditional
-             end do
-          endif
-         end do
+   !           do t=1,nisotherms_mpc
+   !            if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
+   !              cld_isotm_slf_nonsim(i,t,s) = cld_isotm_slf_nonsim(i,t,s) + cld(i,k)
+   !            end if ! loose temperature conditional
+   !           end do
+   !        endif
+   !       end do
 
-     endif ! cld fract and mr conditional
-    enddo ! i, k loops
-   enddo ! i, k loops
+   !   endif ! cld fract and mr conditional
+   !  enddo ! i, k loops
+   ! enddo ! i, k loops
 
    ! Calculate variables to match CALIOP (discard instances below thick cloud)
 
