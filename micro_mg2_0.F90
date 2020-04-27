@@ -1505,9 +1505,9 @@ subroutine micro_mg_tend ( &
 
      if (do_cldice) then
         call secondary_ice_production(t(:,k), psacws(:,k), msacwi(:,k), nsacwi(:,k), mgncol)
-        where (nsacwi(:,k)*deltat.gt.1.e6_r8) ! jks limit ni contributions from secondary ice processes to 1000 (1/m3/s)
-           nsacwi(:,k) = 1.e6_r8/deltat !
-        end where
+      !   where (nsacwi(:,k)*deltat.gt.1.e6_r8) ! jks limit ni contributions from secondary ice processes to 1000 (1/m3/s)
+      !      nsacwi(:,k) = 1.e6_r8/deltat !
+      !   end where
      else
         nsacwi(:,k) = 0.0_r8
         msacwi(:,k) = 0.0_r8
@@ -1992,9 +1992,10 @@ subroutine micro_mg_tend ( &
         !================================================================
 
         if (do_cldice .and. nitend(i,k).gt.0._r8.and.ni(i,k)+nitend(i,k)*deltat.gt.nimax(i,k)) then
-           if (mgrlats(i)*180._r8/3.14159_r8.lt.+66.66667_r8 .or. t(i,k).lt.235.15_r8) then ! jks only ignore NIMAX in the Arctic for clouds T>-38C
-              nitend(i,k)=max(0._r8,(nimax(i,k)-ni(i,k))/deltat)
-           end if
+           nitend(i,k)=max(0._r8,(nimax(i,k)-ni(i,k))/deltat)
+         !   if (mgrlats(i)*180._r8/3.14159_r8.lt.+66.66667_r8 .or. t(i,k).lt.235.15_r8) then ! jks only ignore NIMAX in the Arctic for clouds T>-38C
+         !      nitend(i,k)=max(0._r8,(nimax(i,k)-ni(i,k))/deltat)
+         !   end if
         end if
 
      end do

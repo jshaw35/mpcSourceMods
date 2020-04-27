@@ -668,7 +668,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    integer :: ierr
    character(128) :: errstring     ! return status (non-blank for error return)
 
-   integer :: t, s                 ! loop through bins of temperature and slf
+   integer :: t, s                 ! loop through bins of temperature and slf jks
 
    !-----------------------------------------------------------------------
 
@@ -1148,16 +1148,16 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call micro_mg_get_cols1_0(ncol, nlev, top_lev, state%q(:,:,ixcldliq), &
            state%q(:,:,ixcldice), mgncol, mgcols)
    case (2)
-      call micro_mg_get_cols2_0(lchnk, ncol, nlev, top_lev, state%q(:,:,ixcldliq), &
+      call micro_mg_get_cols2_0(lchnk, ncol, nlev, top_lev, state%q(:,:,ixcldliq), & ! jks
            state%q(:,:,ixcldice), state%q(:,:,ixrain), state%q(:,:,ixsnow), &
-           mgncol, mgcols, mgrlats)
+           mgncol, mgcols, mgrlats) ! jks
    end select
 
    call micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev)
 
 end subroutine micro_mg_cam_tend
 
-subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev)
+subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgrlats, nlev) ! jks
 
    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
         mg_liq_props, mg_ice_props, avg_diameter, rhoi, rhosn, rhow, rhows, &
@@ -1187,7 +1187,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    integer :: lchnk, ncol, psetcols, ngrdcol
 
    integer :: i, k, itim_old, it
-   integer :: t, s, pr                 !zsm, jks
+   integer :: t, s                 !zsm, jks
 
    real(r8), pointer :: naai(:,:)      ! ice nucleation number
    real(r8), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
