@@ -1383,7 +1383,9 @@ subroutine micro_mg_tend ( &
 
      ! Double WBF efficiency if in arctic !zsm !191004 jks added unique tag for wbf
      do i=1,mgncol
-        if (mgrlats(i)*180._r8/3.14159_r8.gt.+66.66667_r8) wbfeffmult(i,k) = wbf_tag
+        if (mgrlats(i)*180._r8/3.14159_r8.gt.+66.66667_r8) then 
+           wbfeffmult(i,k) = wbf_tag
+        end if
      end do
 
      !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
