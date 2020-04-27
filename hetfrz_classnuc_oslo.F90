@@ -559,9 +559,9 @@ subroutine hetfrz_classnuc_oslo_calc( &
    call outfld('dst3_num',      total_aer_num(:,:,3),    pcols, lchnk)
 
    ! create variables so that the scaling can be checked 120919
-   call outfld('bc_num_scaled',        total_aer_num_scaled(:,:,1),    pcols, lchnk)
-   call outfld('dst1_num_scaled',      total_aer_num_scaled(:,:,2),    pcols, lchnk)
-   call outfld('dst3_num_scaled',      total_aer_num_scaled(:,:,3),    pcols, lchnk)
+   call outfld('bc_num_scaled',        total_aer_num_scaled(:,:,1),    pcols, lchnk) !jks
+   call outfld('dst1_num_scaled',      total_aer_num_scaled(:,:,2),    pcols, lchnk) !jks
+   call outfld('dst3_num_scaled',      total_aer_num_scaled(:,:,3),    pcols, lchnk) !jks
 
    call outfld('bcc_num',       coated_aer_num(:,:,1),   pcols, lchnk)
    call outfld('dst1c_num',     coated_aer_num(:,:,2),   pcols, lchnk)

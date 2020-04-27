@@ -87,7 +87,6 @@ use cldfrc2m,       only: rhmini=>rhmini_const
 
 use cam_history,    only: addfld, add_default, outfld, horiz_only
 
-use cam_history_support, only: add_hist_coord ! jks 111119
 
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
@@ -653,8 +652,6 @@ subroutine micro_mg_cam_init(pbuf2d)
    use micro_mg1_0, only: micro_mg_init1_0 => micro_mg_init
    use micro_mg2_0, only: micro_mg_init2_0 => micro_mg_init
 
-   ! use mod_cosp_config,  only : R_UNDEF ! jks unsure, error cospy
-
    !-----------------------------------------------------------------------
    !
    ! Initialization for MG microphysics
@@ -677,8 +674,6 @@ subroutine micro_mg_cam_init(pbuf2d)
    integer :: t, s, pr             ! loop through bins of temperature, slf,
                                    ! and precip  !zsm, jks
 
-   integer, parameter :: wp = SELECTED_REAL_KIND(12)  ! jks cospy
-   real(wp),parameter :: R_UNDEF = -1.0E30            ! jks
 
    !-----------------------------------------------------------------------
 
@@ -1364,8 +1359,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    use tropopause,      only: tropopause_find, TROP_ALG_CPP, TROP_ALG_NONE, NOTFOUND
    use wv_saturation,   only: qsat
 
-   ! use mod_cosp_config,  only : R_UNDEF ! jks unsure cospy
-
    type(physics_state),         intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: dtime
@@ -1883,7 +1876,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8), pointer :: rel_grid(:,:)
    real(r8), pointer :: rei_grid(:,:)
    real(r8), pointer :: sadice_grid(:,:)
-   real(r8), pointer :: sadliq_grid(:,:) !zsm
+   real(r8), pointer :: sadliq_grid(:,:) !zsm, jks
    real(r8), pointer :: sadsnow_grid(:,:)
    real(r8), pointer :: dei_grid(:,:)
    real(r8), pointer :: des_grid(:,:)
@@ -1989,8 +1982,6 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
 
    real(r8), pointer :: pckdptr(:,:)
 
-   integer, parameter :: wp = SELECTED_REAL_KIND(12)  ! jks cospy
-   real(wp),parameter :: R_UNDEF = -1.0E30            ! jks
 
    !-------------------------------------------------------------------------------
 
@@ -3676,7 +3667,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call outfld('REL',         rel_grid,         pcols, lchnk)
    call outfld('REI',         rei_grid,         pcols, lchnk)
    call outfld('MG_SADICE',   sadice_grid,      pcols, lchnk)
-   call outfld('MG_SADLIQ',   sadliq_grid,      pcols, lchnk) !zsm
+   call outfld('MG_SADLIQ',   sadliq_grid,      pcols, lchnk) !zsm,jks
    call outfld('MG_SADSNOW',  sadsnow_grid,     pcols, lchnk)
    call outfld('ICIMRST',     icimrst_grid_out, pcols, lchnk)
    call outfld('ICWMRST',     icwmrst_grid_out, pcols, lchnk)
