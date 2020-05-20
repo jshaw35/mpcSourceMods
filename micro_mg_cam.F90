@@ -803,6 +803,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)'                         )
    call addfld ('CT_SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' ) ! jks
    call addfld ('CT_CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)'                         ) ! jks
+   call addfld ('CT_TEMP' ,             horiz_only, 'A', 'K', 'Temperature at retrieved cloudtop') ! jks
 
    ! call add_hist_coord('isotherms_mpc', nisotherms_mpc, 'mixed-phase cloud isotherms (data within 1.0C)',  &
    !         'C', isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
@@ -1233,8 +1234,9 @@ subroutine micro_mg_cam_init(pbuf2d)
       ! SLF OUTPUT !zsm, jks
    call add_default ('SLFXCLD_ISOTM',        1, ' ')
    call add_default ('CLD_ISOTM',            1, ' ')
-   call add_default ('CT_SLFXCLD_ISOTM',        1, ' ')
-   call add_default ('CT_CLD_ISOTM',            1, ' ')
+   call add_default ('CT_SLFXCLD_ISOTM',     1, ' ')
+   call add_default ('CT_CLD_ISOTM',         1, ' ')
+   call add_default ('CT_TEMP',              1, ' ')
 
    ! call add_default ('SLFXCLD_ISOTM',        1, ' ')
    ! call add_default ('SADLIQXCLD_ISOTM',     1, ' ')
@@ -1454,6 +1456,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8) :: cld_isotm(pcols,nisotherms_mpc)
    real(r8) :: ct_slfxcld_isotm(pcols,nisotherms_mpc) ! jks
    real(r8) :: ct_cld_isotm(pcols,nisotherms_mpc) ! jks
+   real(r8) :: ct_temp(pcols) ! jks
 
    real(r8) :: cldtau(pcols,pver)
    real(r8) :: wgt
@@ -3374,6 +3377,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    cld_isotm                         = 0._r8
    ct_slfxcld_isotm                  = 0._r8 ! jks
    ct_cld_isotm                      = 0._r8 ! jks
+   ct_temp                           = 0._r8 ! jks
 
    ! slfxcld_isotm                     = 0._r8
    ! sadliqxcld_isotm                  = 0._r8
@@ -3498,6 +3502,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
                         ! ct_slf(i,t)             = sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) ! no need to weight, right? change var name
                         ct_slfxcld_isotm(i,t)   = ct_slfxcld_isotm(i,t) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
                         ct_cld_isotm(i,t)       = ct_cld_isotm(i,t) + cld(i,k) ! why add and not just label the variable (only one iter)
+                        ct_temp(i)              = state_loc%t(i,k)
                      end if ! loose temperature conditional
                   end do ! isotherm bin iteration
                end if ! cld fract and mr conditional
@@ -3645,6 +3650,7 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call outfld('CLD_ISOTM',cld_isotm    ,pcols,lchnk)  !!
    call outfld('CT_SLFXCLD_ISOTM',ct_slfxcld_isotm    ,pcols,lchnk)  !!
    call outfld('CT_CLD_ISOTM',ct_cld_isotm    ,pcols,lchnk)  !!
+   call outfld('CT_TEMP',ct_temp    ,pcols,lchnk)  !!
    
    ! call outfld( 'SLFXCLD_ISOTM',        slfxcld_isotm,         pcols,lchnk )
    ! call outfld( 'SADLIQXCLD_ISOTM',     sadliqxcld_isotm,      pcols,lchnk )
