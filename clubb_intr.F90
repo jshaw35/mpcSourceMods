@@ -2339,12 +2339,17 @@ end subroutine clubb_init_cnst
    
    do k=1,pver
       do i=1,ncol
-         if( state1%t(i,k) > 268.15_r8 ) then
+      ! determine the fraction of ice that is convectively detrained ! jks
+      ! ramp modified to be linear from -20 to -35C ! jks
+         ! if( state1%t(i,k) > 268.15_r8 ) then
+         write(iulog,*)'  Reading modified ramp (jks)'
+         if( state1%t(i,k) > 243.15_r8 ) then
             dum1 = 0.0_r8
          elseif ( state1%t(i,k) < 238.15_r8 ) then
             dum1 = 1.0_r8
          else
-            dum1 = ( 268.15_r8 - state1%t(i,k) ) / 30._r8 
+            ! dum1 = ( 268.15_r8 - state1%t(i,k) ) / 30._r8 
+            dum1 = ( 243.15_r8 - state1%t(i,k) ) / 5._r8 
          endif
 
          if (zmconv_microp) then

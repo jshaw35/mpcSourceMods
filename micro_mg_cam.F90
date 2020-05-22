@@ -803,7 +803,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloud fraction near isotherm (discard below thick cloud)'                         )
    call addfld ('CT_SLFXCLD_ISOTM',        (/'isotherms_mpc'/), 'A', ' ', 'Mean cloudtop supercooled liquid fraction near isotherm * CLD_ISOTM (discard below thick cloud)' ) ! jks
    call addfld ('CT_CLD_ISOTM' ,           (/'isotherms_mpc'/), 'A', ' ', 'Total cloudtop cloud fraction near isotherm (discard below thick cloud)'                         ) ! jks
-   call addfld ('CT_TEMP' ,             horiz_only, 'A', 'K', 'Temperature at retrieved cloudtop') ! jks
+   call addfld ('CT_TEMP' ,                horiz_only, 'A', 'K', 'Temperature at retrieved cloudtop') ! jks
+   call addfld ('CT_SLFXCT_CLD' ,          horiz_only, 'A', ' ', 'Mean cloudtop supercooled liquid fraction') ! jks
+   call addfld ('CT_CLD' ,                 horiz_only, 'A', ' ', 'Total cloudtop cloud fraction') ! jks
 
    ! call add_hist_coord('isotherms_mpc', nisotherms_mpc, 'mixed-phase cloud isotherms (data within 1.0C)',  &
    !         'C', isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
@@ -1237,6 +1239,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call add_default ('CT_SLFXCLD_ISOTM',     1, ' ')
    call add_default ('CT_CLD_ISOTM',         1, ' ')
    call add_default ('CT_TEMP',              1, ' ')
+   call add_default ('CT_SLFXCT_CLD',        1, ' ')
+   call add_default ('CT_CLD',               1, ' ')
+
 
    ! call add_default ('SLFXCLD_ISOTM',        1, ' ')
    ! call add_default ('SADLIQXCLD_ISOTM',     1, ' ')
@@ -1457,6 +1462,8 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8) :: ct_slfxcld_isotm(pcols,nisotherms_mpc) ! jks
    real(r8) :: ct_cld_isotm(pcols,nisotherms_mpc) ! jks
    real(r8) :: ct_temp(pcols) ! jks
+   real(r8) :: ct_slfxct_cld(pcols) ! jks
+   real(r8) :: ct_slf(pcols) ! jks
 
    real(r8) :: cldtau(pcols,pver)
    real(r8) :: wgt
@@ -3378,6 +3385,8 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    ct_slfxcld_isotm                  = 0._r8 ! jks
    ct_cld_isotm                      = 0._r8 ! jks
    ct_temp                           = 0._r8 ! jks
+   ct_slfxct_cld                     = 0._r8 ! jks
+   ct_cld                            = 0._r8 ! jks
 
    ! slfxcld_isotm                     = 0._r8
    ! sadliqxcld_isotm                  = 0._r8
@@ -3497,6 +3506,9 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
             if (cldtau(i,k).gt.0.3 .and. cldtau(i,k).lt.3.0) then ! Cloud optical thickness range for which we trust obs
                if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then ! cld fract and mr conditional
                   cloudtoptest=.false. ! cloudtop found for this grid, move to the next
+                  ! slf values w/o isotherm dimension for olimpia
+                  ct_slfxct_cld(i) = sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k) 
+                  ct_cld(i) = ct_cld(i) + cld(i,k)
                   do t=1,nisotherms_mpc ! bin the following variables by isotherm
                      if ((state_loc%t(i,k).gt.isotherms_mpc_bounds(1,t)).and.(state_loc%t(i,k).le.isotherms_mpc_bounds(2,t))) then
                         ! ct_slf(i,t)             = sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) ! no need to weight, right? change var name
@@ -3646,11 +3658,13 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call outfld('CLDFSNOW',    cldfsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 
    !SLF output - print to history files !zsm, jks
-   call outfld('SLFXCLD_ISOTM',slfxcld_isotm    ,pcols,lchnk)  !!
-   call outfld('CLD_ISOTM',cld_isotm    ,pcols,lchnk)  !!
-   call outfld('CT_SLFXCLD_ISOTM',ct_slfxcld_isotm    ,pcols,lchnk)  !!
-   call outfld('CT_CLD_ISOTM',ct_cld_isotm    ,pcols,lchnk)  !!
-   call outfld('CT_TEMP',ct_temp    ,pcols,lchnk)  !!
+   call outfld('SLFXCLD_ISOTM',     slfxcld_isotm,    pcols,lchnk)  !!
+   call outfld('CLD_ISOTM',         cld_isotm,        pcols,lchnk)  !!
+   call outfld('CT_SLFXCLD_ISOTM',  ct_slfxcld_isotm, pcols,lchnk)  !!
+   call outfld('CT_CLD_ISOTM',      ct_cld_isotm,     pcols,lchnk)  !!
+   call outfld('CT_TEMP',           ct_temp,          pcols,lchnk)  !!
+   call outfld('CT_SLFXCT_CLD',     ct_slfxct_cld,    pcols,lchnk)  !!
+   call outfld('CT_CLD',            ct_cld,           pcols,lchnk)  !!
    
    ! call outfld( 'SLFXCLD_ISOTM',        slfxcld_isotm,         pcols,lchnk )
    ! call outfld( 'SADLIQXCLD_ISOTM',     sadliqxcld_isotm,      pcols,lchnk )
