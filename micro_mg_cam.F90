@@ -806,6 +806,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('CT_TEMP' ,                horiz_only, 'A', 'K', 'Temperature at retrieved cloudtop') ! jks
    call addfld ('CT_SLFXCT_CLD' ,          horiz_only, 'A', ' ', 'Mean cloudtop supercooled liquid fraction') ! jks
    call addfld ('CT_CLD' ,                 horiz_only, 'A', ' ', 'Total cloudtop cloud fraction') ! jks
+   call addfld ('HIGHEST_SLFXCLD' ,        horiz_only, 'A', ' ', 'Mean highest cloud supercooled liquid fraction * HIGHEST_CLD') ! jks
+   call addfld ('HIGHEST_CLD' ,            horiz_only, 'A', ' ', 'Total highest cloud fraction') ! jks
+   call addfld ('HIGHEST_TEMP' ,           horiz_only, 'A', 'K', 'Temperature at retrieved at highest cloud level') ! jks
 
    ! call add_hist_coord('isotherms_mpc', nisotherms_mpc, 'mixed-phase cloud isotherms (data within 1.0C)',  &
    !         'C', isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
@@ -1241,7 +1244,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call add_default ('CT_TEMP',              1, ' ')
    call add_default ('CT_SLFXCT_CLD',        1, ' ')
    call add_default ('CT_CLD',               1, ' ')
-
+   call add_default ('HIGHEST_SLFXCLD',      1, ' ')
+   call add_default ('HIGHEST_CLD',          1, ' ')
+   call add_default ('HIGHEST_TEMP',         1, ' ')
 
    ! call add_default ('SLFXCLD_ISOTM',        1, ' ')
    ! call add_default ('SADLIQXCLD_ISOTM',     1, ' ')
@@ -1463,12 +1468,15 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    real(r8) :: ct_cld_isotm(pcols,nisotherms_mpc) ! jks
    real(r8) :: ct_temp(pcols) ! jks
    real(r8) :: ct_slfxct_cld(pcols) ! jks
-   real(r8) :: ct_slf(pcols) ! jks
+   real(r8) :: ct_cld(pcols) ! jks
+   real(r8) :: highest_slfxcld(pcols) ! jks
+   real(r8) :: highest_cld(pcols) ! jks
+   real(r8) :: highest_temp(pcols) ! jks
 
    real(r8) :: cldtau(pcols,pver)
    real(r8) :: wgt
    logical :: calioptest(pcols)
-   logical :: cloudtoptest ! jks cloudtop boolean
+   logical :: cloudtoptest, highcloudtest ! jks cloudtop booleans
    real(r8), parameter :: abarl = 2.817e-02_r8 ! A coefficient for extinction optical depth
    real(r8), parameter :: bbarl = 1.305_r8 ! b coefficient for extinction optical depth
    real(r8), parameter :: abari = 3.448e-03_r8 ! A coefficient for extinction optical depth
@@ -3384,9 +3392,12 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    cld_isotm                         = 0._r8
    ct_slfxcld_isotm                  = 0._r8 ! jks
    ct_cld_isotm                      = 0._r8 ! jks
-   ct_temp                           = 0._r8 ! jks
+   ! ct_temp                           = 0._r8 ! jks, should this start as zero?
    ct_slfxct_cld                     = 0._r8 ! jks
    ct_cld                            = 0._r8 ! jks
+   highest_slfxcld                   = 0._r8 ! jks
+   highest_cld                       = 0._r8 ! jks
+   ! highest_temp                      = 0._r8 ! jks, should this start as zero?
 
    ! slfxcld_isotm                     = 0._r8
    ! sadliqxcld_isotm                  = 0._r8
@@ -3501,7 +3512,16 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
 
    do i=1,ncol ! grid box iteration
       cloudtoptest=.true. ! reset cloudtop boolean for each new grid
+      highcloudtest=.true.
       do k=1,pver ! vertical layer iteration
+         if (highcloudtest) then ! for olimpia, select the highest cloud available
+            if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then ! cld fract and mr conditional
+               highcloudtest=.false.
+               highest_slfxcld(i)           = highest_slfxcld(i) + sadliq_grid(i,k)/(sadliq_grid(i,k)+sadice_grid(i,k)) * cld(i,k)
+               highest_cld(i)               = highest_cld(i) + cld(i,k)
+               highest_temp(i)              = state_loc%t(i,k)
+            end if
+         end if
          if (cloudtoptest) then ! cloudtop test conditional
             if (cldtau(i,k).gt.0.3 .and. cldtau(i,k).lt.3.0) then ! Cloud optical thickness range for which we trust obs
                if (cld(i,k).gt.0.01 .and. (icimrst(i,k)+icwmrst(i,k)).gt.1.e-7_r8) then ! cld fract and mr conditional
@@ -3665,6 +3685,9 @@ subroutine micro_mg_cam_tend_pack(state, ptend, dtime, pbuf, mgncol, mgcols, mgr
    call outfld('CT_TEMP',           ct_temp,          pcols,lchnk)  !!
    call outfld('CT_SLFXCT_CLD',     ct_slfxct_cld,    pcols,lchnk)  !!
    call outfld('CT_CLD',            ct_cld,           pcols,lchnk)  !!
+   call outfld('HIGHEST_SLFXCLD',   highest_slfxcld,  pcols,lchnk)  !!
+   call outfld('HIGHEST_CLD',       highest_cld,      pcols,lchnk)  !!
+   call outfld('HIGHEST_TEMP',      highest_temp,     pcols,lchnk)  !!
    
    ! call outfld( 'SLFXCLD_ISOTM',        slfxcld_isotm,         pcols,lchnk )
    ! call outfld( 'SADLIQXCLD_ISOTM',     sadliqxcld_isotm,      pcols,lchnk )
