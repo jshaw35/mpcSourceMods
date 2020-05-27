@@ -233,6 +233,8 @@ subroutine hetfrz_classnuc_oslo_init(mincld_in)
    call addfld('FREQMIX', (/ 'lev' /), 'A', 'fraction', 'Fractional occurance of mixed-phase clouds' )
 
    call addfld('DSTFREZIMM', (/ 'lev' /), 'A', 'm-3s-1', 'dust immersion  freezing rate')
+   call addfld('DSTFREZIMM_D1', (/ 'lev' /), 'A', 'm-3s-1', 'dust1 immersion  freezing rate') ! jks
+   call addfld('DSTFREZIMM_D3', (/ 'lev' /), 'A', 'm-3s-1', 'dust3 immersion  freezing rate') ! jks
    call addfld('DSTFREZCNT', (/ 'lev' /), 'A', 'm-3s-1', 'dust contact    freezing rate')
    call addfld('DSTFREZDEP', (/ 'lev' /), 'A', 'm-3s-1', 'dust deposition freezing rate')
 
@@ -303,6 +305,8 @@ subroutine hetfrz_classnuc_oslo_init(mincld_in)
       call add_default('FREQMIX', 1, ' ')
 
       call add_default('DSTFREZIMM', 1, ' ')
+      call add_default('DSTFREZIMM_D1', 1, ' ') ! jks
+      call add_default('DSTFREZIMM_D3', 1, ' ') ! jks
       call add_default('DSTFREZCNT', 1, ' ')
       call add_default('DSTFREZDEP', 1, ' ')
 
@@ -431,12 +435,14 @@ subroutine hetfrz_classnuc_oslo_calc( &
    real(r8) :: ncic
 
    real(r8) :: frzbcimm(pcols,pver), frzduimm(pcols,pver)
+   real(r8) :: frzduimm_d1(pcols,pver), frzduimm_d3(pcols,pver) ! jks
    real(r8) :: frzbccnt(pcols,pver), frzducnt(pcols,pver)
    real(r8) :: frzbcdep(pcols,pver), frzdudep(pcols,pver)
 
    real(r8) :: freqimm(pcols,pver), freqcnt(pcols,pver), freqdep(pcols,pver), freqmix(pcols,pver)
    real(r8) :: nnuccc_bc(pcols,pver), nnucct_bc(pcols,pver), nnudep_bc(pcols,pver)
    real(r8) :: nnuccc_dst(pcols,pver), nnucct_dst(pcols,pver), nnudep_dst(pcols,pver)
+   real(r8) :: nnuccc_dst_d1(pcols,pver), nnuccc_dst_d3(pcols,pver)                  ! jks
    real(r8) :: niimm_bc(pcols,pver), nicnt_bc(pcols,pver), nidep_bc(pcols,pver)
    real(r8) :: niimm_dst(pcols,pver), nicnt_dst(pcols,pver), nidep_dst(pcols,pver)
    real(r8) :: numice10s(pcols,pver)
@@ -597,6 +603,8 @@ subroutine hetfrz_classnuc_oslo_calc( &
 
    frzbcimm(:ncol,:) = 0._r8
    frzduimm(:ncol,:) = 0._r8
+   frzduimm_d1(:ncol,:) = 0._r8 ! jks
+   frzduimm_d3(:ncol,:) = 0._r8 ! jks
    frzbccnt(:ncol,:) = 0._r8
    frzducnt(:ncol,:) = 0._r8
    frzbcdep(:ncol,:) = 0._r8
@@ -616,6 +624,8 @@ subroutine hetfrz_classnuc_oslo_calc( &
    nnudep_bc(:,:) = 0._r8
 
    nnuccc_dst(:,:) = 0._r8
+   nnuccc_dst_d1(:,:) = 0._r8 ! jks
+   nnuccc_dst_d3(:,:) = 0._r8 ! jks
    nnucct_dst(:,:) = 0._r8
    nnudep_dst(:,:) = 0._r8
 
@@ -647,6 +657,7 @@ subroutine hetfrz_classnuc_oslo_calc( &
             call hetfrz_classnuc_calc( &
                deltatin,  t(i,k),  pmid(i,k),  supersatice,   &
                fn,  r3lx,  ncic*rho(i,k)*1.0e-6_r8,  frzbcimm(i,k),  frzduimm(i,k),   &
+               frzduimm_d1(i,k), frzduimm_d3(i,k), & ! jks
                frzbccnt(i,k),  frzducnt(i,k),  frzbcdep(i,k),  frzdudep(i,k),  hetraer(i,k,:), &
                awcam(i,k,:), awfacm(i,k,:), dstcoat(i,k,:), total_aer_num_scaled(i,k,:),  &
                coated_aer_num_scaled(i,k,:), uncoated_aer_num_scaled(i,k,:), total_interstitial_aer_num_scaled(i,k,:), &
@@ -673,6 +684,8 @@ subroutine hetfrz_classnuc_oslo_calc( &
          nnudep_bc(i,k) = frzbcdep(i,k)*1.0e6_r8*ast(i,k)
 
          nnuccc_dst(i,k) = frzduimm(i,k)*1.0e6_r8*ast(i,k)
+         nnuccc_dst_d1(i,k) = frzduimm_d1(i,k)*1.0e6_r8*ast(i,k) ! jks 
+         nnuccc_dst_d3(i,k) = frzduimm_d3(i,k)*1.0e6_r8*ast(i,k) ! jks
          nnucct_dst(i,k) = frzducnt(i,k)*1.0e6_r8*ast(i,k)     
          nnudep_dst(i,k) = frzdudep(i,k)*1.0e6_r8*ast(i,k)
 
@@ -696,6 +709,8 @@ subroutine hetfrz_classnuc_oslo_calc( &
    call outfld('FREQMIX', freqmix, pcols, lchnk)
 
    call outfld('DSTFREZIMM', nnuccc_dst, pcols, lchnk)
+   call outfld('DSTFREZIMM_D1', nnuccc_dst_d1, pcols, lchnk) ! jks
+   call outfld('DSTFREZIMM_D3', nnuccc_dst_d3, pcols, lchnk) ! jks
    call outfld('DSTFREZCNT', nnucct_dst, pcols, lchnk)
    call outfld('DSTFREZDEP', nnudep_dst, pcols, lchnk)
 
