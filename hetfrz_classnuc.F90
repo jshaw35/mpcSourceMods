@@ -407,22 +407,26 @@ subroutine hetfrz_classnuc_calc( &
                        total_cloudborne_aer_num(id_dst1)/deltat*(1._r8-exp(-Jimm_dust_a1*deltat)))
             frzduimm_d1 = frzduimm_d1+MIN(1*total_cloudborne_aer_num(id_dst1)/deltat, &                  ! jks
                           total_cloudborne_aer_num(id_dst1)/deltat*(1._r8-exp(-Jimm_dust_a1*deltat)))    ! jks
+         end if
          if (do_dst3) then 
             frzduimm = frzduimm+MIN(1*total_cloudborne_aer_num(id_dst3)/deltat, &
                        total_cloudborne_aer_num(id_dst3)/deltat*(1._r8-exp(-Jimm_dust_a3*deltat)))            
             frzduimm_d3 = frzduimm_d3+MIN(1*total_cloudborne_aer_num(id_dst3)/deltat, &                  ! jks
                           total_cloudborne_aer_num(id_dst3)/deltat*(1._r8-exp(-Jimm_dust_a3*deltat)))    ! jks
+         end if
       else
          if (do_dst1) then 
             frzduimm = frzduimm+MIN(1*total_cloudborne_aer_num(id_dst1)/deltat,        &
                        total_cloudborne_aer_num(id_dst1)/deltat*(1._r8-sum_imm_dust_a1))
             frzduimm_d1 = frzduimm_d1+MIN(1*total_cloudborne_aer_num(id_dst1)/deltat,        &           ! jks
                           total_cloudborne_aer_num(id_dst1)/deltat*(1._r8-sum_imm_dust_a1))              ! jks
+         end if
          if (do_dst3) then 
             frzduimm = frzduimm+MIN(1*total_cloudborne_aer_num(id_dst3)/deltat,        &
                        total_cloudborne_aer_num(id_dst3)/deltat*(1._r8-sum_imm_dust_a3))
             frzduimm_d3 = frzduimm_d3+MIN(1*total_cloudborne_aer_num(id_dst3)/deltat,        &           ! jks
                           total_cloudborne_aer_num(id_dst3)/deltat*(1._r8-sum_imm_dust_a3))              ! jks
+         end if
       end if
 
    else
@@ -435,22 +439,26 @@ subroutine hetfrz_classnuc_calc( &
                        fn(id_dst1)*total_aer_num(id_dst1)/deltat*(1._r8-exp(-Jimm_dust_a1*deltat)))
             frzduimm_d1 = frzduimm_d1+MIN(1*fn(id_dst1)*total_aer_num(id_dst1)/deltat, &                 ! jks
                           fn(id_dst1)*total_aer_num(id_dst1)/deltat*(1._r8-exp(-Jimm_dust_a1*deltat)))   ! jks
+         end if
          if (do_dst3) then 
             frzduimm = frzduimm+MIN(1*fn(id_dst3)*total_aer_num(id_dst3)/deltat, &
                        fn(id_dst3)*total_aer_num(id_dst3)/deltat*(1._r8-exp(-Jimm_dust_a3*deltat)))
             frzduimm_d3 = frzduimm_d3+MIN(1*fn(id_dst3)*total_aer_num(id_dst3)/deltat, &                 ! jks
                           fn(id_dst3)*total_aer_num(id_dst3)/deltat*(1._r8-exp(-Jimm_dust_a3*deltat)))   ! jks
+         end if
       else
          if (do_dst1) then 
             frzduimm = frzduimm+MIN(1*fn(id_dst1)*total_aer_num(id_dst1)/deltat,        &
                        fn(id_dst1)*total_aer_num(id_dst1)/deltat*(1._r8-sum_imm_dust_a1))
             frzduimm_d1 = frzduimm_d1+MIN(1*fn(id_dst1)*total_aer_num(id_dst1)/deltat,        &          ! jks
                        fn(id_dst1)*total_aer_num(id_dst1)/deltat*(1._r8-sum_imm_dust_a1))                ! jks
+         end if
          if (do_dst3) then 
             frzduimm = frzduimm+MIN(1*fn(id_dst3)*total_aer_num(id_dst3)/deltat,        &
                        fn(id_dst3)*total_aer_num(id_dst3)/deltat*(1._r8-sum_imm_dust_a3))
             frzduimm_d3 = frzduimm_d3+MIN(1*fn(id_dst3)*total_aer_num(id_dst3)/deltat,        &          ! jks
                           fn(id_dst3)*total_aer_num(id_dst3)/deltat*(1._r8-sum_imm_dust_a3))             ! jks
+         end if
       end if
    end if
 

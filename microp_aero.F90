@@ -890,7 +890,6 @@ subroutine microp_aero_run ( &
             ,numberConcentration, volumeConcentration &
             ,f_acm, f_bcm, f_aqm, f_so4_condm, f_soam &
             ,hygroscopicity, lnsigma, cam, volumeCore, volumeCoat) ! jks 120719 trying anything
-            ! ,hygroscopicity, lnsigma, cam, volumeCore, volumeCoat, ncol, lchnk) ! jks 120719 trying anything
 
 
    end if
