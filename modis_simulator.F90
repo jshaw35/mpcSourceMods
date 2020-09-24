@@ -424,7 +424,7 @@ contains
   end subroutine modis_column
 
   ! ########################################################################################
-  function cloud_top_pressure(nLevels,tauIncrement, pressure, tauLimit) ! JKS
+  function cloud_top_pressure(nLevels,tauIncrement, pressure, tauLimit) ! JKS mimic, take t field as input
     ! INPUTS
     integer, intent(in)                    :: nLevels
     real(wp),intent(in),dimension(nLevels) :: tauIncrement, pressure

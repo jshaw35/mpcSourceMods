@@ -1402,7 +1402,7 @@ CONTAINS
     integer, parameter :: nf_lidar=28                    ! number of lidar outputs !!+cosp1.4
     integer, parameter :: nf_isccp=9                     ! number of isccp outputs
     integer, parameter :: nf_misr=1                      ! number of misr outputs
-    integer, parameter :: nf_modis=20                    ! number of modis outputs
+    integer, parameter :: nf_modis=20                    ! number of modis outputs ! JKS be aware of
     
     ! Cloudsat outputs
     character(len=max_fieldname_len),dimension(nf_radar),parameter ::        &
@@ -1430,7 +1430,7 @@ CONTAINS
                        'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
                        'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
                        'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
-                       'CLRLMODIS   '/) ! JKS
+                       'CLRLMODIS   '/) ! JKS add TCT and increment nf_modis, or nothing if it can be ignored
     
     logical :: run_radar(nf_radar,pcols)                 ! logical telling you if you should run radar simulator
     logical :: run_lidar(nf_lidar,pcols)                 ! logical telling you if you should run lidar simulator
@@ -1711,7 +1711,7 @@ CONTAINS
              run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk,pcols)
           end do
        end if
-       if (lmodis_sim) then
+       if (lmodis_sim) then ! JKS this iterates over nf_modis, which I am maybe changing
           do i=1,nf_modis
              run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk,pcols)
           end do
@@ -2103,7 +2103,7 @@ CONTAINS
     ! Call COSP
     ! ######################################################################################
     call t_startf("cosp_simulator")
-    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
+    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.) ! JKS
 
     ! Check status flags
     nerror = 0

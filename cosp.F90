@@ -256,7 +256,7 @@ CONTAINS
     type(calipso_IN)  :: calipsoIN  ! Input to the LIDAR simulator
     type(parasol_IN)  :: parasolIN  ! Input to the PARASOL simulator
     type(cloudsat_IN) :: cloudsatIN ! Input to the CLOUDSAT radar simulator
-    type(modis_IN)    :: modisIN    ! Input to the MODIS simulator
+    type(modis_IN)    :: modisIN    ! Input to the MODIS simulator ! JKS
     type(rttov_IN)    :: rttovIN    ! Input to the RTTOV simulator
     integer,optional  :: start_idx,stop_idx
     logical,optional  :: debug
@@ -298,10 +298,10 @@ CONTAINS
          modisCfIce, modisCfHigh, modisCfMid, modisCfLow,modisMeanTauTotal,     &
          modisMeanTauLiquid, modisMeanTauIce, modisMeanLogTauTotal,             &
          modisMeanLogTauLiquid, modisMeanLogTauIce, modisMeanSizeLiquid,        &
-         modisMeanSizeIce, modisMeanCloudTopPressure, modisMeanLiquidWaterPath, &
+         modisMeanSizeIce, modisMeanCloudTopPressure, modisMeanLiquidWaterPath, & ! JKS, subcolumn var
          radar_lidar_tcc
     REAL(WP), dimension(:,:),allocatable  :: &
-         modisRetrievedCloudTopPressure,modisRetrievedTau,modisRetrievedSize,   & ! JKS
+         modisRetrievedCloudTopPressure,modisRetrievedTau,modisRetrievedSize,   & ! JKS, column var
          misr_boxtau,misr_boxztop,misr_dist_model_layertops,isccp_boxtau,       &
          isccp_boxttop,isccp_boxptop,calipso_beta_mol,lidar_only_freq_cloud
     REAL(WP), dimension(:,:,:),allocatable :: &
@@ -562,7 +562,7 @@ CONTAINS
        modisIN%g         => cospIN%asym
        modisIN%w0        => cospIN%ss_alb
       !  modisIN%ta        => cospgridIN%at ! JKS
-       modisIN%Nsunlit   = count(cospgridIN%sunlit > 0)
+       modisIN%Nsunlit   = count(cospgridIN%sunlit > 0) ! JKS what is this? how are these sub-sampled
        if (modisIN%Nsunlit .gt. 0) then
           allocate(modisIN%sunlit(modisIN%Nsunlit),modisIN%pres(modisIN%Nsunlit,cospIN%Nlevels+1))
           modisIN%sunlit    = pack((/ (i, i = 1, Npoints ) /),mask = cospgridIN%sunlit > 0)
@@ -722,14 +722,14 @@ CONTAINS
                    modisRetrievedCloudTopPressure(modisIN%nSunlit,modisIN%nColumns)) ! JKS
           ! Call simulator
           do i = 1, modisIN%nSunlit
-             call modis_subcolumn(modisIN%Ncolumns,modisIN%Nlevels,modisIN%pres(i,:),    &
-                                  modisIN%tau(int(modisIN%sunlit(i)),:,:),               &
+             call modis_subcolumn(modisIN%Ncolumns,modisIN%Nlevels,modisIN%pres(i,:),    & ! JKS this passes in a 1d-field
+                                  modisIN%tau(int(modisIN%sunlit(i)),:,:),               & ! JKS These pass in 2d fields
                                   modisIN%liqFrac(int(modisIN%sunlit(i)),:,:),           &
                                   modisIN%g(int(modisIN%sunlit(i)),:,:),                 &
                                   modisIN%w0(int(modisIN%sunlit(i)),:,:),                &
                                   isccp_boxptop(int(modisIN%sunlit(i)),:),               &
                                   modisRetrievedPhase(i,:),                              &
-                                  modisRetrievedCloudTopPressure(i,:),                   & ! JKS
+                                  modisRetrievedCloudTopPressure(i,:),                   & ! JKS output cloudtop pressure for subcolumns
                                   modisRetrievedTau(i,:),modisRetrievedSize(i,:))
           end do
        endif
@@ -965,7 +965,7 @@ CONTAINS
                    modisMeanLogTauIce(modisIN%nSunlit),                                  &
                    modisMeanSizeLiquid(modisIN%nSunlit),                                 &
                    modisMeanSizeIce(modisIN%nSunlit),                                    &
-                   modisMeanCloudTopPressure(modisIN%nSunlit),                           &
+                   modisMeanCloudTopPressure(modisIN%nSunlit),                           & ! JKS
                    modisMeanLiquidWaterPath(modisIN%nSunlit),                            &
                    modisMeanIceWaterPath(modisIN%nSunlit),                               &
                    modisJointHistogram(modisIN%nSunlit,numMODISTauBins,numMODISPresBins),&
@@ -973,13 +973,13 @@ CONTAINS
                    modisJointHistogramLiq(modisIN%nSunlit,numModisTauBins,numMODISReffLiqBins))
           ! Call simulator
           call modis_column(modisIN%nSunlit, modisIN%Ncolumns,modisRetrievedPhase,       &
-                             modisRetrievedCloudTopPressure,modisRetrievedTau,           & ! JKS
+                             modisRetrievedCloudTopPressure,modisRetrievedTau,           & ! JKS subcolumn values from modis_subcolumn
                              modisRetrievedSize, modisCfTotal, modisCfLiquid, modisCfIce,&
                              modisCfHigh, modisCfMid, modisCfLow, modisMeanTauTotal,     &
                              modisMeanTauLiquid, modisMeanTauIce, modisMeanLogTauTotal,  &
                              modisMeanLogTauLiquid, modisMeanLogTauIce,                  &
                              modisMeanSizeLiquid, modisMeanSizeIce,                      &
-                             modisMeanCloudTopPressure, modisMeanLiquidWaterPath,        &
+                             modisMeanCloudTopPressure, modisMeanLiquidWaterPath,        & ! JKS, grid output for cosp
                              modisMeanIceWaterPath, modisJointHistogram,                 &
                              modisJointHistogramIce,modisJointHistogramLiq)
           ! Store data (if requested)
@@ -1039,7 +1039,7 @@ CONTAINS
              cospOUT%modis_Cloud_Particle_Size_Ice_Mean(ij+int(modisIN%sunlit(:))-1) =   &
                   modisMeanSizeIce
           endif
-          if (associated(cospOUT%modis_Cloud_Top_Pressure_Total_Mean)) then ! JKS
+          if (associated(cospOUT%modis_Cloud_Top_Pressure_Total_Mean)) then ! JKS, won't need to redo if
              cospOUT%modis_Cloud_Top_Pressure_Total_Mean(ij+int(modisIN%sunlit(:))-1) =  &
                   modisMeanCloudTopPressure
           endif
