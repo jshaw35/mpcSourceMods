@@ -70,12 +70,6 @@ module cospsimulator_intr
   ! Frequency at which cosp is called, every cosp_nradsteps radiation timestep
   integer, public :: cosp_nradsteps = 1! CAM namelist variable default, not in COSP namelist
   
-  ! jks COSP backpack for slf_isotherms:
-  integer           :: nisotherms_mpc, k
-  real(r8), target  :: isotherms_mpc_midpoints(9) ! temp midpoints of cuz cloud phase output (9)
-  real(r8)         :: isotherms_mpc_bounds(2,9)  ! temp bounds for cuz outputs (2,9)
-  logical           :: slf_isotherms         = .true. ! jks adding isos coord bool
-
 #ifdef USE_COSP
 
   ! ######################################################################################  
@@ -354,7 +348,6 @@ CONTAINS
        endif
     endif
     
-
     ! Set COSP call frequency, from namelist.
     cosp_nradsteps = cosp_nradsteps_in
     
@@ -368,7 +361,6 @@ CONTAINS
              htsr_htmid_cosp(nht_cosp*nsr_cosp),htsr_srmid_cosp(nht_cosp*nsr_cosp),                             &
              htmlscol_htmlmid_cosp(nhtml_cosp*nscol_cosp),htmlscol_scol_cosp(nhtml_cosp*nscol_cosp))
     
-
     ! DJS2017: Just pull from cosp_config
     if (use_vgrid_in) then
        htlim_cosp_1d(1)            = vgrid_zu(1)
@@ -403,7 +395,6 @@ CONTAINS
        htmisrtau_cosp(k) = k
     end do
     
-
     ! next, assign collapsed reference vectors for cam_history.F90
     ! convention for saving output = prs1,tau1 ... prs1,tau7 ; prs2,tau1 ... prs2,tau7 etc.
     ! actual output is specified in cospsimulator1_intr.F90
@@ -456,25 +447,6 @@ CONTAINS
     ! Local variables
     integer :: unitn, ierr
     character(len=*), parameter :: subname = 'cospsimulator_intr_readnl'
-
-    ! jks Do all slf_isotherm operations outside of USE_COSP #ifdef statement
-    namelist /slfsimulator_nl/ slf_isotherms ! jks out of loop. Not sure if this will work.
-#ifdef SPMD
-    call mpibcast(slf_isotherms,        1,  mpilog, 0, mpicom) ! Broadcast namelist variables
-#endif
-
-    nisotherms_mpc = 9 ! jks
-    
-    ! assign midpoint and bound values:
-    do k=1,nisotherms_mpc
-       isotherms_mpc_midpoints(k)=273.15_r8-5._r8*(nisotherms_mpc-k)
-       isotherms_mpc_bounds(1,k)=isotherms_mpc_midpoints(k)-1.0_r8
-       isotherms_mpc_bounds(2,k)=isotherms_mpc_midpoints(k)+1.0_r8
-    end do
-
-    if (slf_isotherms) then
-       write(iulog,*)'  Adding SLF_isotherms (jks)                 = ', slf_isotherms
-    end if
 
 #ifdef USE_COSP
 !!! this list should include any variable that you might want to include in the namelist
@@ -676,13 +648,6 @@ CONTAINS
 
     use cam_history_support, only: add_hist_coord
     
-    ! jks using namelist option to add new history coordinate for SLF by isotherm
-    if (slf_isotherms) then ! doesn't seem to give the midpoints values, but I guess that's ok.
-      call add_hist_coord('isotherms_mpc', nisotherms_mpc,                                                 &
-         'mixed-phase cloud isotherms (data within 1.0C)', 'C',                                            &
-         isotherms_mpc_midpoints, bounds_name='isotherms_mpc_bounds', bounds=isotherms_mpc_bounds)
-    end if
-
 #ifdef USE_COSP
     ! register non-standard variable dimensions
     if (lisccp_sim .or. lmodis_sim) then
@@ -1402,7 +1367,7 @@ CONTAINS
     integer, parameter :: nf_lidar=28                    ! number of lidar outputs !!+cosp1.4
     integer, parameter :: nf_isccp=9                     ! number of isccp outputs
     integer, parameter :: nf_misr=1                      ! number of misr outputs
-    integer, parameter :: nf_modis=20                    ! number of modis outputs ! JKS be aware of
+    integer, parameter :: nf_modis=20                    ! number of modis outputs ! JKS note
     
     ! Cloudsat outputs
     character(len=max_fieldname_len),dimension(nf_radar),parameter ::        &
@@ -1430,7 +1395,7 @@ CONTAINS
                        'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
                        'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
                        'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
-                       'CLRLMODIS   '/) ! JKS add TCT and increment nf_modis, or nothing if it can be ignored
+                       'CLRLMODIS   '/) ! JKS note
     
     logical :: run_radar(nf_radar,pcols)                 ! logical telling you if you should run radar simulator
     logical :: run_lidar(nf_lidar,pcols)                 ! logical telling you if you should run lidar simulator
@@ -1711,7 +1676,7 @@ CONTAINS
              run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk,pcols)
           end do
        end if
-       if (lmodis_sim) then ! JKS this iterates over nf_modis, which I am maybe changing
+       if (lmodis_sim) then ! JKS note
           do i=1,nf_modis
              run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk,pcols)
           end do
