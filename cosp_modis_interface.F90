@@ -44,6 +44,7 @@ MODULE MOD_COSP_Modis_INTERFACE
   ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !  TYPE modis_in
   ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+  !--JKS, adding state temperature here
   type modis_IN
      integer,pointer :: &
           Npoints,        & ! Number of horizontal gridpoints
@@ -56,6 +57,7 @@ MODULE MOD_COSP_Modis_INTERFACE
           notSunlit         ! Dark scenes
      real(wp),allocatable,dimension(:,:) :: &
           pres              ! Gridmean pressure at layer edges (Pa) 
+          at                ! Atmospheric temperature ! JKS (col,lev)
      real(wp),pointer ::  &
           tau(:,:,:),     & ! Subcolumn optical thickness @ 0.67 microns.
           liqFrac(:,:,:), & ! Liquid water fraction

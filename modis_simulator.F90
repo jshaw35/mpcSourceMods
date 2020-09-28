@@ -112,8 +112,9 @@ contains
   !       alogrithm in this simulator we simply report the values from the ISCCP simulator. 
   ! ########################################################################################
   subroutine modis_subcolumn(nSubCols, nLevels, pressureLevels, optical_thickness,       & 
-                         tauLiquidFraction, g, w0,isccpCloudTopPressure,                 &
-                         retrievedPhase, retrievedCloudTopPressure,                      & ! JKS
+                         tauLiquidFraction, g, w0, ta, isccpCloudTopPressure,            & ! JKS added ta
+                         retrievedPhase, retrievedCloudTopPressure,                      & 
+                         retrievedCloudTopTemp,                                          & ! JKS new TCT subcolumn output
                          retrievedTau,   retrievedSize)
 
     ! INPUTS
@@ -121,7 +122,9 @@ contains
          nSubCols,                  & ! Number of subcolumns
          nLevels                      ! Number of levels         
     real(wp),dimension(nLevels+1),intent(in) :: &
-         pressureLevels               ! Gridmean pressure at layer edges (Pa)                  
+         pressureLevels               ! Gridmean pressure at layer edges (Pa)    
+    real(wp),dimension(nLevels),intent(in) :: &
+         ta                           ! Gridmean temperature at layer (K) ! JKS            
     real(wp),dimension(nSubCols,nLevels),intent(in) :: & ! JKS
          optical_thickness,         & ! Subcolumn optical thickness @ 0.67 microns.
          tauLiquidFraction,         & ! Liquid water fraction
@@ -135,6 +138,7 @@ contains
          retrievedPhase               ! MODIS retrieved phase (liquid/ice/other)              
     real(wp),dimension(nSubCols), intent(inout) :: &
          retrievedCloudTopPressure, & ! MODIS retrieved CTP (Pa) ! JKS
+         retrievedCloudTopTemp,     & ! MODIS retrieved CTT (K) ! JKS added
          retrievedTau,              & ! MODIS retrieved optical depth (unitless)              
          retrievedSize                ! MODIS retrieved particle size (microns)              
 
@@ -174,7 +178,9 @@ contains
           ! ##################################################################################
           retrievedCloudTopPressure(i) = cloud_top_pressure(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
                                                             pressureLevels(1:nLevels),CO2Slicing_TauLimit)  
-        
+          !--JKS calculate subcolumn cloud top temp
+          retrievedCloudTopTemp(i) = cloud_top_temp(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
+                                                    pressureLevels(1:nLevels),CO2Slicing_TauLimit,ta) ! JKS additional column temp arg.
           ! ##################################################################################
           !                               Phase determination 
           ! Determine fraction of total tau that's liquid when ice and water contribute about 
@@ -217,6 +223,7 @@ contains
        else   
           ! Values when we don't think there's a cloud. 
           retrievedCloudTopPressure(i) = R_UNDEF 
+          retrievedCloudTopTemp(i)     = R_UNDEF ! JKS
           retrievedPhase(i)            = phaseIsNone
           retrievedSize(i)             = R_UNDEF 
           retrievedTau(i)              = R_UNDEF 
@@ -228,20 +235,22 @@ contains
     ! We use the ISCCP-derived CTP for low clouds, since the ISCCP simulator ICARUS 
     ! mimics what MODIS does to first order. 
     ! Of course, ISCCP cloud top pressures are in mb.   
-    where(cloudMask(1:nSubCols) .and. retrievedCloudTopPressure(1:nSubCols) > CO2Slicing_PressureLimit) &
+    where(cloudMask(1:nSubCols) .and. retrievedCloudTopPressure(1:nSubCols) > CO2Slicing_PressureLimit) & ! JKS fuck how do I handle this?
          retrievedCloudTopPressure(1:nSubCols) = isccpCloudTopPressure! * 100._wp
+         ! JKS handle somehow? It will produce something regardless.
     
   end subroutine modis_subcolumn
 
   ! ########################################################################################
-  subroutine modis_column(nPoints,nSubCols,phase, cloud_top_pressure, optical_thickness, particle_size,     &
+  subroutine modis_column(nPoints,nSubCols,phase, cloud_top_pressure, optical_thickness, cloud_top_temp, particle_size,     & ! JKS added TCT
        Cloud_Fraction_Total_Mean,         Cloud_Fraction_Water_Mean,         Cloud_Fraction_Ice_Mean,        &
        Cloud_Fraction_High_Mean,          Cloud_Fraction_Mid_Mean,           Cloud_Fraction_Low_Mean,        &
        Optical_Thickness_Total_Mean,      Optical_Thickness_Water_Mean,      Optical_Thickness_Ice_Mean,     &
        Optical_Thickness_Total_MeanLog10, Optical_Thickness_Water_MeanLog10, Optical_Thickness_Ice_MeanLog10,&
        Cloud_Particle_Size_Water_Mean,    Cloud_Particle_Size_Ice_Mean,      Cloud_Top_Pressure_Total_Mean,  &
-       Liquid_Water_Path_Mean,            Ice_Water_Path_Mean,                                               &    
+       Liquid_Water_Path_Mean,            Cloud_Top_Temp_Total_Mean,         Ice_Water_Path_Mean,            &    ! JKS adding Cloud_Top_Temp_Total_Mean
        Optical_Thickness_vs_Cloud_Top_Pressure,Optical_Thickness_vs_ReffIce,Optical_Thickness_vs_ReffLiq)
+     !   Liquid_Water_Path_Mean,            Ice_Water_Path_Mean,                                               &    ! JKS old line
     
     ! INPUTS
     integer,intent(in) :: &
@@ -251,6 +260,7 @@ contains
          phase                             
     real(wp),intent(in),dimension(nPoints, nSubCols) ::  & ! JKS
          cloud_top_pressure,                &
+         cloud_top_temp,                    & ! JKS added
          optical_thickness,                 &
          particle_size
  
@@ -272,6 +282,7 @@ contains
          Cloud_Particle_Size_Ice_Mean,      & !
          Cloud_Top_Pressure_Total_Mean,     & !
          Liquid_Water_Path_Mean,            & !
+         Cloud_Top_Temp_Total_Mean,         & ! JKS
          Ice_Water_Path_Mean                  !
     real(wp),intent(inout),dimension(nPoints,numMODISTauBins,numMODISPresBins) :: &
          Optical_Thickness_vs_Cloud_Top_Pressure
@@ -359,6 +370,8 @@ contains
        Ice_Water_Path_Mean               = R_UNDEF
     endwhere
     Cloud_Top_Pressure_Total_Mean  = sum(cloud_top_pressure, mask = cloudMask, dim = 2) / &
+                                     max(1, count(cloudMask, dim = 2))
+    Cloud_Top_Temp_Total_Mean      = sum(cloud_top_temp, mask = cloudMask, dim = 2) / &
                                      max(1, count(cloudMask, dim = 2))
 
     ! ########################################################################################
@@ -453,7 +466,7 @@ contains
         totalTau =     totalTau     + tauIncrement(i) 
         totalProduct = totalProduct + tauIncrement(i) * (pressure(i) + pressure(i-1)) / 2._wp
       end if 
-      if(totalTau >= tauLimit) exit ! JKS
+      if(totalTau >= tauLimit) exit ! JKS exits
     end do 
 
     if (totalTau > 0._wp) then
@@ -463,6 +476,55 @@ contains
     endif
     
   end function cloud_top_pressure
+
+    ! ########################################################################################
+  function cloud_top_temp(nLevels,tauIncrement, pressure, tauLimit, temp) ! JKS mimicing, take t field as input
+     ! INPUTS
+     integer, intent(in)                    :: nLevels
+     real(wp),intent(in),dimension(nLevels) :: tauIncrement, pressure, temp ! JKS added temp
+     real(wp),intent(in)                    :: tauLimit
+     ! OUTPUTS
+     ! real(wp)                               :: cloud_top_pressure
+     real(wp)                               :: cloud_top_temp
+     ! LOCAL VARIABLES
+     real(wp)                               :: deltaX, totalTau, totalProduct, tempProduct ! JKS
+     integer                                :: i 
+     
+     ! Find the extinction-weighted pressure. Assume that pressure varies linearly between 
+     !   layers and use the trapezoidal rule.
+     totalTau = 0._wp; totalProduct = 0._wp
+     do i = 2, size(tauIncrement) ! Starts at 2 because the index starts at 1
+       if(totalTau + tauIncrement(i) > tauLimit) then 
+         deltaX = tauLimit - totalTau
+         totalTau = totalTau + deltaX
+         !
+         ! Result for trapezoidal rule when you take less than a full step
+         !   tauIncrement is a layer-integrated value
+         !
+         totalProduct = totalProduct           &
+                      + pressure(i-1) * deltaX &
+                      + (pressure(i) - pressure(i-1)) * deltaX**2/(2._wp * tauIncrement(i)) 
+
+         ! JKS do a linear fit for temperature between layers
+         tempProduct = temp(i-1) + (temp(i) - temp(i-1)) * (deltaX / tauIncrement(i))
+
+       else
+         totalTau =     totalTau     + tauIncrement(i) 
+         totalProduct = totalProduct + tauIncrement(i) * (pressure(i) + pressure(i-1)) / 2._wp
+         tempProduct =  temp(i) ! JKS
+       end if 
+       if(totalTau >= tauLimit) exit
+     end do 
+ 
+     if (totalTau > 0._wp) then ! JKS how do I do this?
+     !    cloud_top_pressure = totalProduct/totalTau
+        cloud_top_temp = tempProduct
+     else
+     !    cloud_top_pressure = 0._wp
+        cloud_top_temp = 0._wp
+     endif
+     
+   end function cloud_top_temp
 
   ! ########################################################################################
   function weight_by_extinction(nLevels,tauIncrement, f, tauLimit) 

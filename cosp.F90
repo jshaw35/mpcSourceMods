@@ -299,10 +299,12 @@ CONTAINS
          modisCfIce, modisCfHigh, modisCfMid, modisCfLow,modisMeanTauTotal,     &
          modisMeanTauLiquid, modisMeanTauIce, modisMeanLogTauTotal,             &
          modisMeanLogTauLiquid, modisMeanLogTauIce, modisMeanSizeLiquid,        &
-         modisMeanSizeIce, modisMeanCloudTopPressure, modisMeanLiquidWaterPath, & ! JKS, subcolumn var
-         radar_lidar_tcc
+         modisMeanSizeIce, modisMeanCloudTopPressure, modisMeanLiquidWaterPath, & ! JKS, column var
+         ! radar_lidar_tcc
+         radar_lidar_tcc, modisMeanCloudTopTemp                                   ! JKS TCT for columns
     REAL(WP), dimension(:,:),allocatable  :: &
-         modisRetrievedCloudTopPressure,modisRetrievedTau,modisRetrievedSize,   & ! JKS, column var
+         modisRetrievedCloudTopPressure,modisRetrievedTau,modisRetrievedSize,   & ! JKS, subcolumn var
+         modisRetrievedCloudTopTemp,                                            & ! JKS TCT for (col,subcol)
          misr_boxtau,misr_boxztop,misr_dist_model_layertops,isccp_boxtau,       &
          isccp_boxttop,isccp_boxptop,calipso_beta_mol,lidar_only_freq_cloud
     REAL(WP), dimension(:,:,:),allocatable :: &
@@ -562,12 +564,13 @@ CONTAINS
        modisIN%tau       => cospIN%tau_067
        modisIN%g         => cospIN%asym
        modisIN%w0        => cospIN%ss_alb
-      !  modisIN%ta        => cospgridIN%at ! JKS
+      !  modisIN%ta        => cospgridIN%at ! JKS ??
        modisIN%Nsunlit   = count(cospgridIN%sunlit > 0) ! JKS what is this? how are these sub-sampled
        if (modisIN%Nsunlit .gt. 0) then
           allocate(modisIN%sunlit(modisIN%Nsunlit),modisIN%pres(modisIN%Nsunlit,cospIN%Nlevels+1))
           modisIN%sunlit    = pack((/ (i, i = 1, Npoints ) /),mask = cospgridIN%sunlit > 0)
-          modisIN%pres      = cospgridIN%phalf(int(modisIN%sunlit(:)),:)
+          modisIN%pres      = cospgridIN%phalf(int(modisIN%sunlit(:)),:) ! JKS might have to check this, selecting sunny columns only?
+          modisIN%ta        = cospgridIN%at(int(modisIN%sunlit(:)),:) ! JKS selecting sunny columns only?
        endif
        if (count(cospgridIN%sunlit <= 0) .gt. 0) then
           allocate(modisIN%notSunlit(count(cospgridIN%sunlit <= 0)))
@@ -720,6 +723,7 @@ CONTAINS
           allocate(modisRetrievedTau(modisIN%nSunlit,modisIN%nColumns),                  &
                    modisRetrievedSize(modisIN%nSunlit,modisIN%nColumns),                 &
                    modisRetrievedPhase(modisIN%nSunlit,modisIN%nColumns),                &
+                   modisRetrievedCloudTopTemp(modisIN%nSunlit,modisIN%nColumns),         &
                    modisRetrievedCloudTopPressure(modisIN%nSunlit,modisIN%nColumns)) ! JKS
           ! Call simulator
           do i = 1, modisIN%nSunlit
@@ -728,9 +732,11 @@ CONTAINS
                                   modisIN%liqFrac(int(modisIN%sunlit(i)),:,:),           &
                                   modisIN%g(int(modisIN%sunlit(i)),:,:),                 &
                                   modisIN%w0(int(modisIN%sunlit(i)),:,:),                &
+                                  modisIN%ta(i,:),                                       & ! JKS adding temperature column
                                   isccp_boxptop(int(modisIN%sunlit(i)),:),               &
                                   modisRetrievedPhase(i,:),                              &
                                   modisRetrievedCloudTopPressure(i,:),                   & ! JKS output cloudtop pressure for subcolumns
+                                  modisRetrievedCloudTopTemp(i,:),                       & ! JKS  cloudtop temp for a subcolumn
                                   modisRetrievedTau(i,:),modisRetrievedSize(i,:))
           end do
        endif
@@ -966,7 +972,8 @@ CONTAINS
                    modisMeanLogTauIce(modisIN%nSunlit),                                  &
                    modisMeanSizeLiquid(modisIN%nSunlit),                                 &
                    modisMeanSizeIce(modisIN%nSunlit),                                    &
-                   modisMeanCloudTopPressure(modisIN%nSunlit),                           & ! JKS
+                   modisMeanCloudTopPressure(modisIN%nSunlit),                           & ! JKS, need to add variable for temp
+                   modisMeanCloudTopTemp(modisIN%nSunlit),                               & ! JKS, allocate space
                    modisMeanLiquidWaterPath(modisIN%nSunlit),                            &
                    modisMeanIceWaterPath(modisIN%nSunlit),                               &
                    modisJointHistogram(modisIN%nSunlit,numMODISTauBins,numMODISPresBins),&
@@ -975,12 +982,14 @@ CONTAINS
           ! Call simulator
           call modis_column(modisIN%nSunlit, modisIN%Ncolumns,modisRetrievedPhase,       &
                              modisRetrievedCloudTopPressure,modisRetrievedTau,           & ! JKS subcolumn values from modis_subcolumn
+                             modisRetrievedCloudTopTemp,                                 & ! JKS input subcolumn TCT values
                              modisRetrievedSize, modisCfTotal, modisCfLiquid, modisCfIce,&
                              modisCfHigh, modisCfMid, modisCfLow, modisMeanTauTotal,     &
                              modisMeanTauLiquid, modisMeanTauIce, modisMeanLogTauTotal,  &
                              modisMeanLogTauLiquid, modisMeanLogTauIce,                  &
                              modisMeanSizeLiquid, modisMeanSizeIce,                      &
                              modisMeanCloudTopPressure, modisMeanLiquidWaterPath,        & ! JKS, grid output for cosp
+                             modisMeanCloudTopTemp,                                      & ! JKS, grid output for cosp
                              modisMeanIceWaterPath, modisJointHistogram,                 &
                              modisJointHistogramIce,modisJointHistogramLiq)
           ! Store data (if requested)
@@ -1043,6 +1052,8 @@ CONTAINS
           if (associated(cospOUT%modis_Cloud_Top_Pressure_Total_Mean)) then ! JKS, won't need to redo if
              cospOUT%modis_Cloud_Top_Pressure_Total_Mean(ij+int(modisIN%sunlit(:))-1) =  &
                   modisMeanCloudTopPressure
+             cospOUT%modis_Cloud_Top_Temp_Total_Mean(ij+int(modisIN%sunlit(:))-1) =  & ! JKS write to output
+                  modisMeanCloudTopTemp
           endif
           if (associated(cospOUT%modis_Liquid_Water_Path_Mean)) then
              cospOUT%modis_Liquid_Water_Path_Mean(ij+int(modisIN%sunlit(:))-1)      =    &
@@ -1166,6 +1177,7 @@ CONTAINS
        if (allocated(modisMeanSizeLiquid))             deallocate(modisMeanSizeLiquid)
        if (allocated(modisMeanSizeIce))                deallocate(modisMeanSizeIce)
        if (allocated(modisMeanCloudTopPressure))       deallocate(modisMeanCloudTopPressure)
+       if (allocated(modisMeanCloudTopTemp))           deallocate(modisMeanCloudTopTemp)
        if (allocated(modisMeanLiquidWaterPath))        deallocate(modisMeanLiquidWaterPath)
        if (allocated(modisMeanIceWaterPath))           deallocate(modisMeanIceWaterPath)
        if (allocated(modisJointHistogram))             deallocate(modisJointHistogram)
