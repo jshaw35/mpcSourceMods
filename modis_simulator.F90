@@ -144,6 +144,7 @@ contains
 
     ! LOCAL VARIABLES
     logical, dimension(nSubCols)      :: &
+         ISCCPMask,                      & ! JKS
          cloudMask
     real(wp)                          :: &
          integratedLiquidFraction,       &
@@ -151,6 +152,7 @@ contains
     real(wp),dimension(num_trial_res) :: &
          predicted_Refl_nir
     integer                           :: &
+         j,                              &
          i
 
     ! ########################################################################################
@@ -166,6 +168,9 @@ contains
     ! ########################################################################################
     cloudMask = retrievedTau(1:nSubCols) >= min_OpticalThickness
     
+    ! JKS
+    ISCCPMask = .False. ! Mask for ISCCP pressure tops
+
     do i = 1, nSubCols
        if(cloudMask(i)) then 
           ! ##################################################################################
@@ -180,7 +185,7 @@ contains
                                                             pressureLevels(1:nLevels),CO2Slicing_TauLimit)  
           !--JKS calculate subcolumn cloud top temp
           retrievedCloudTopTemp(i) = cloud_top_temp(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
-                                                    pressureLevels(1:nLevels),CO2Slicing_TauLimit,ta) ! JKS additional column temp arg.
+                                                    pressureLevels(1:nLevels),CO2Slicing_TauLimit,ta) ! JKS additional column temp arg? (1:nLevels)
           ! ##################################################################################
           !                               Phase determination 
           ! Determine fraction of total tau that's liquid when ice and water contribute about 
@@ -237,7 +242,29 @@ contains
     ! Of course, ISCCP cloud top pressures are in mb.   
     where(cloudMask(1:nSubCols) .and. retrievedCloudTopPressure(1:nSubCols) > CO2Slicing_PressureLimit) & ! JKS fuck how do I handle this?
          retrievedCloudTopPressure(1:nSubCols) = isccpCloudTopPressure! * 100._wp
-         ! JKS handle somehow? It will produce something regardless.
+         ISCCPMask(1:nSubCols) = .True. ! Mark when ISCCP pressure is used
+
+    ! JKS
+    do i = 1, nSubCols ! iterate over subcolumns
+       if(ISCCPMask(i)) then ! check if ISCCP PCT used
+          do j = 2, nLevels ! iterate over vertical levels, looking backwards
+               ! if (isccpCloudTopPressure .ge. pressure(i) .and. &
+               ! isccpCloudTopPressure .le. pressure(i+1)) then ! assume pressure decreases with index, moving up
+             if (isccpCloudTopPressure .ge. pressure(j-1) .and. &
+                isccpCloudTopPressure .le. pressure(j)) then ! assume pressure increases with index, moving down
+
+                deltaP = pressure(j) - pressure(j-1) ! pressure increases, so this is positive
+                incrP = isccpCloudTopPressure - pressure(j-1) ! 0 if at j-1, deltaP if at j
+                tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
+               !  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
+
+                retrievedCloudTopTemp(i) = tempProduct
+                exit ! should only exit the inner do loop
+             end if
+          ! replace retrievedCloudTopTemp with an interpolated value
+          end do
+       end if
+    end do
     
   end subroutine modis_subcolumn
 
@@ -505,7 +532,7 @@ contains
                       + pressure(i-1) * deltaX &
                       + (pressure(i) - pressure(i-1)) * deltaX**2/(2._wp * tauIncrement(i)) 
 
-         ! JKS do a linear fit for temperature between layers
+         ! JKS do a linear interpolation for temperature between layers
          tempProduct = temp(i-1) + (temp(i) - temp(i-1)) * (deltaX / tauIncrement(i))
 
        else
@@ -524,7 +551,7 @@ contains
         cloud_top_temp = 0._wp
      endif
      
-   end function cloud_top_temp
+  end function cloud_top_temp
 
   ! ########################################################################################
   function weight_by_extinction(nLevels,tauIncrement, f, tauLimit) 

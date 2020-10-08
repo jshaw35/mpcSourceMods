@@ -778,7 +778,7 @@ CONTAINS
 
        ! Call simulator
        call icarus_column(isccpIN%npoints, isccpIN%ncolumns,isccp_boxtau(:,:),           &
-                          isccp_boxptop(:,:)/100._wp, isccpIN%sunlit,isccp_boxttop,      &
+                          isccp_boxptop(:,:)/100._wp, isccpIN%sunlit,isccp_boxttop,      & ! JKS ??
                           cospOUT%isccp_fq(ij:ik,:,:),                                   &
                           cospOUT%isccp_meanalbedocld(ij:ik),                            &
                           cospOUT%isccp_meanptop(ij:ik),cospOUT%isccp_meantaucld(ij:ik), &
@@ -1302,7 +1302,7 @@ CONTAINS
 
     if (Lmodis_subcolumn) then
        nullify(modisIN%Npoints,modisIN%Ncolumns,modisIN%Nlevels,modisIN%tau,modisIN%g,   &
-               modisIN%liqFrac,modisIN%w0)
+               modisIN%liqFrac,modisIN%w0, modisIN%at) ! JKS clean up modisIN
        if (allocated(modisIN%sunlit))    deallocate(modisIN%sunlit)
        if (allocated(modisIN%notSunlit)) deallocate(modisIN%notSunlit)
        if (allocated(modisIN%pres))      deallocate(modisIN%pres)
