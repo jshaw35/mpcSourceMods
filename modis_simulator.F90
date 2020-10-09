@@ -269,7 +269,7 @@ contains
 !           end do
 !        end if
 !     end do
-         
+
      ! JKS interpolate PCT to TCT
      do i = 1, nSubCols ! iterate over subcolumns
         if(cloudMask(i)) then ! check if cloudy
@@ -281,8 +281,8 @@ contains
 
                   deltaP = pressureLevels(j) - pressureLevels(j-1) ! pressure increases, so this is positive
                   incrP = retrievedCloudTopPressure(i) - pressureLevels(j-1) ! 0 if at j-1, deltaP if at j
-                  tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
-                  !  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
+               !    tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
+                  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
 
                   retrievedCloudTopTemp(i) = tempProduct
                   exit ! should only exit the inner do loop
