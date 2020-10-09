@@ -111,7 +111,7 @@ contains
   !       and reverts to a thermal algorithm much like ISCCP's. Rather than replicate that 
   !       alogrithm in this simulator we simply report the values from the ISCCP simulator. 
   ! ########################################################################################
-  subroutine modis_subcolumn(nSubCols, nLevels, pressureLevels, optical_thickness,       & 
+  subroutine modis_subcolumn(nSubCols, nLevels, pressureLevels, mpressureLevels, optical_thickness,       & ! JKS added mpressureLevels
                          tauLiquidFraction, g, w0, ta, isccpCloudTopPressure,            & ! JKS added ta
                          retrievedPhase, retrievedCloudTopPressure,                      & 
                          retrievedCloudTopTemp,                                          & ! JKS new TCT subcolumn output
@@ -124,8 +124,9 @@ contains
     real(wp),dimension(nLevels+1),intent(in) :: &
          pressureLevels               ! Gridmean pressure at layer edges (Pa)    
     real(wp),dimension(nLevels),intent(in) :: &
-         ta                           ! Gridmean temperature at layer (K) ! JKS            
-    real(wp),dimension(nSubCols,nLevels),intent(in) :: & ! JKS
+         ta,                        & ! Gridmean temperature at layer (K) ! JKS            
+         mpressureLevels              ! Gridmean pressure at midlayer (K) ! JKS            
+    real(wp),dimension(nSubCols,nLevels),intent(in) :: &
          optical_thickness,         & ! Subcolumn optical thickness @ 0.67 microns.
          tauLiquidFraction,         & ! Liquid water fraction
          g,                         & ! Subcolumn assymetry parameter  
@@ -144,9 +145,12 @@ contains
 
     ! LOCAL VARIABLES
     logical, dimension(nSubCols)      :: &
-         ISCCPMask,                      & ! JKS
+         ISCCPMask,                      & ! JKS, ??
          cloudMask
     real(wp)                          :: &
+         deltaP,                         &
+         incrP,                          &
+         tempProduct,                    &
          integratedLiquidFraction,       &
          obs_Refl_nir
     real(wp),dimension(num_trial_res) :: &
@@ -179,13 +183,13 @@ contains
           ! methods for clouds lower than that. For CO2 slicing we report the optical-depth
           ! weighted pressure, integrating to a specified optical depth.
           ! This assumes linear variation in p between levels. Linear in ln(p) is probably 
-          ! better, though we'd need to deal with the lowest pressure gracefully. 
+          ! better, though we'd need to deal with the lowest pressure gracefully. ! JKS?
           ! ##################################################################################
           retrievedCloudTopPressure(i) = cloud_top_pressure(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
                                                             pressureLevels(1:nLevels),CO2Slicing_TauLimit)  
           !--JKS calculate subcolumn cloud top temp
-          retrievedCloudTopTemp(i) = cloud_top_temp(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
-                                                    pressureLevels(1:nLevels),CO2Slicing_TauLimit,ta) ! JKS additional column temp arg? (1:nLevels)
+          ! retrievedCloudTopTemp(i) = cloud_top_temp(nLevels,(/ 0._wp, optical_thickness(i,1:nLevels) /), &
+          !                                           pressureLevels(1:nLevels),CO2Slicing_TauLimit,ta) ! JKS additional column temp arg? (1:nLevels)
           ! ##################################################################################
           !                               Phase determination 
           ! Determine fraction of total tau that's liquid when ice and water contribute about 
@@ -245,26 +249,48 @@ contains
          ISCCPMask(1:nSubCols) = .True. ! Mark when ISCCP pressure is used
 
     ! JKS
-    do i = 1, nSubCols ! iterate over subcolumns
-       if(ISCCPMask(i)) then ! check if ISCCP PCT used
-          do j = 2, nLevels ! iterate over vertical levels, looking backwards
+!     do i = 1, nSubCols ! iterate over subcolumns
+!        if(ISCCPMask(i)) then ! check if ISCCP PCT used
+!           do j = 2, nLevels ! iterate over vertical levels, looking backwards
+!                ! if (isccpCloudTopPressure .ge. pressure(i) .and. &
+!                ! isccpCloudTopPressure .le. pressure(i+1)) then ! assume pressure decreases with index, moving up
+!              if (isccpCloudTopPressure(i) .ge. pressureLevels(j-1) .and. &
+!                 isccpCloudTopPressure(i) .le. pressureLevels(j)) then ! assume pressure increases with index, moving down
+
+!                 deltaP = pressureLevels(j) - pressureLevels(j-1) ! pressure increases, so this is positive
+!                 incrP = isccpCloudTopPressure(i) - pressureLevels(j-1) ! 0 if at j-1, deltaP if at j
+!                 tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
+!                !  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
+
+!                 retrievedCloudTopTemp(i) = tempProduct
+!                 exit ! should only exit the inner do loop
+!              end if
+!           ! replace retrievedCloudTopTemp with an interpolated value
+!           end do
+!        end if
+!     end do
+         
+     ! JKS interpolate PCT to TCT
+     do i = 1, nSubCols ! iterate over subcolumns
+        if(cloudMask(i)) then ! check if cloudy
+           do j = 2, nLevels ! iterate over vertical levels, looking backwards
                ! if (isccpCloudTopPressure .ge. pressure(i) .and. &
                ! isccpCloudTopPressure .le. pressure(i+1)) then ! assume pressure decreases with index, moving up
-             if (isccpCloudTopPressure .ge. pressure(j-1) .and. &
-                isccpCloudTopPressure .le. pressure(j)) then ! assume pressure increases with index, moving down
+               if (retrievedCloudTopPressure(i) .ge. pressureLevels(j-1) .and. &
+               retrievedCloudTopPressure(i) .le. pressureLevels(j)) then ! assume pressure increases with index, moving down
 
-                deltaP = pressure(j) - pressure(j-1) ! pressure increases, so this is positive
-                incrP = isccpCloudTopPressure - pressure(j-1) ! 0 if at j-1, deltaP if at j
-                tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
-               !  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
+                  deltaP = pressureLevels(j) - pressureLevels(j-1) ! pressure increases, so this is positive
+                  incrP = retrievedCloudTopPressure(i) - pressureLevels(j-1) ! 0 if at j-1, deltaP if at j
+                  tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
+                  !  tempProduct = ta(i) + (ta(i+1) - ta(i)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
 
-                retrievedCloudTopTemp(i) = tempProduct
-                exit ! should only exit the inner do loop
-             end if
+                  retrievedCloudTopTemp(i) = tempProduct
+                  exit ! should only exit the inner do loop
+               end if
           ! replace retrievedCloudTopTemp with an interpolated value
-          end do
-       end if
-    end do
+           end do
+        end if
+     end do
     
   end subroutine modis_subcolumn
 
@@ -508,7 +534,7 @@ contains
   function cloud_top_temp(nLevels,tauIncrement, pressure, tauLimit, temp) ! JKS mimicing, take t field as input
      ! INPUTS
      integer, intent(in)                    :: nLevels
-     real(wp),intent(in),dimension(nLevels) :: tauIncrement, pressure, temp ! JKS added temp
+     real(wp),intent(in),dimension(nLevels) :: tauIncrement, pressure, temp ! JKS added temp, pressure is without the last value
      real(wp),intent(in)                    :: tauLimit
      ! OUTPUTS
      ! real(wp)                               :: cloud_top_pressure

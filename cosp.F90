@@ -570,8 +570,10 @@ CONTAINS
        modisIN%Nsunlit   = count(cospgridIN%sunlit > 0) ! JKS what is this? how are these sub-sampled
        if (modisIN%Nsunlit .gt. 0) then
           allocate(modisIN%sunlit(modisIN%Nsunlit),modisIN%pres(modisIN%Nsunlit,cospIN%Nlevels+1))
+          allocate(modisIN%mpres(modisIN%Nsunlit,cospIN%Nlevels)) ! JKS allocate pressure midpoints
           modisIN%sunlit    = pack((/ (i, i = 1, Npoints ) /),mask = cospgridIN%sunlit > 0)
           modisIN%pres      = cospgridIN%phalf(int(modisIN%sunlit(:)),:) ! JKS might have to check this, selecting sunny columns only?
+          modisIN%mpres     = cospgridIN%pfull(int(modisIN%sunlit(:)),:) ! JKS add pressure midpoints from model state cospstateIN%pfull
           modisIN%ta        = cospgridIN%at(int(modisIN%sunlit(:)),:) ! JKS selecting sunny columns only?
        endif
        if (count(cospgridIN%sunlit <= 0) .gt. 0) then
@@ -730,6 +732,7 @@ CONTAINS
           ! Call simulator
           do i = 1, modisIN%nSunlit
              call modis_subcolumn(modisIN%Ncolumns,modisIN%Nlevels,modisIN%pres(i,:),    & ! JKS this passes in a 1d-field
+                                  modisIN%mpres(i,:),                                    & ! JKS add midpoint pressure grid
                                   modisIN%tau(int(modisIN%sunlit(i)),:,:),               & ! JKS These pass in 2d fields
                                   modisIN%liqFrac(int(modisIN%sunlit(i)),:,:),           &
                                   modisIN%g(int(modisIN%sunlit(i)),:,:),                 &
@@ -1306,6 +1309,7 @@ CONTAINS
        if (allocated(modisIN%sunlit))    deallocate(modisIN%sunlit)
        if (allocated(modisIN%notSunlit)) deallocate(modisIN%notSunlit)
        if (allocated(modisIN%pres))      deallocate(modisIN%pres)
+       if (allocated(modisIN%mpres))      deallocate(modisIN%mpres)
     endif
 
     if (allocated(calipso_beta_tot))      deallocate(calipso_beta_tot)

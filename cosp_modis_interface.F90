@@ -57,6 +57,7 @@ MODULE MOD_COSP_Modis_INTERFACE
           notSunlit         ! Dark scenes
      real(wp),allocatable,dimension(:,:) :: &
           pres,           &  ! Gridmean pressure at layer edges (Pa) 
+          mpres,          &  ! Gridmean pressure mid-layer edges (Pa) ! JKS
           ta                ! Atmospheric temperature ! JKS (col,lev)
      real(wp),pointer ::  &
           tau(:,:,:),     & ! Subcolumn optical thickness @ 0.67 microns.
