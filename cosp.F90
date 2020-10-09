@@ -569,8 +569,10 @@ CONTAINS
       !  modisIN%ta        => cospgridIN%at ! JKS ??
        modisIN%Nsunlit   = count(cospgridIN%sunlit > 0) ! JKS what is this? how are these sub-sampled
        if (modisIN%Nsunlit .gt. 0) then
-          allocate(modisIN%sunlit(modisIN%Nsunlit),modisIN%pres(modisIN%Nsunlit,cospIN%Nlevels+1))
-          allocate(modisIN%mpres(modisIN%Nsunlit,cospIN%Nlevels)) ! JKS allocate pressure midpoints
+          allocate(modisIN%sunlit(modisIN%Nsunlit),                        &
+                   modisIN%pres(modisIN%Nsunlit,cospIN%Nlevels+1),         &
+                   modisIN%mpres(modisIN%Nsunlit,cospIN%Nlevels),          &
+                   modisIN%ta(modisIN%Nsunlit,cospIN%Nlevels))
           modisIN%sunlit    = pack((/ (i, i = 1, Npoints ) /),mask = cospgridIN%sunlit > 0)
           modisIN%pres      = cospgridIN%phalf(int(modisIN%sunlit(:)),:) ! JKS might have to check this, selecting sunny columns only?
           modisIN%mpres     = cospgridIN%pfull(int(modisIN%sunlit(:)),:) ! JKS add pressure midpoints from model state cospstateIN%pfull
@@ -1305,11 +1307,12 @@ CONTAINS
 
     if (Lmodis_subcolumn) then
        nullify(modisIN%Npoints,modisIN%Ncolumns,modisIN%Nlevels,modisIN%tau,modisIN%g,   &
-               modisIN%liqFrac,modisIN%w0, modisIN%at) ! JKS clean up modisIN
+               modisIN%liqFrac,modisIN%w0) !, modisIN%ta) ! JKS clean up modisIN
        if (allocated(modisIN%sunlit))    deallocate(modisIN%sunlit)
        if (allocated(modisIN%notSunlit)) deallocate(modisIN%notSunlit)
        if (allocated(modisIN%pres))      deallocate(modisIN%pres)
-       if (allocated(modisIN%mpres))      deallocate(modisIN%mpres)
+       if (allocated(modisIN%mpres))     deallocate(modisIN%mpres) ! JKS
+       if (allocated(modisIN%ta))        deallocate(modisIN%ta) ! JKS
     endif
 
     if (allocated(calipso_beta_tot))      deallocate(calipso_beta_tot)
