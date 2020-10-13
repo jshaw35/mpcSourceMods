@@ -276,17 +276,20 @@ contains
            do j = 2, nLevels ! iterate over vertical levels, looking backwards
                if (retrievedCloudTopPressure(i) .lt. mpressureLevels(1)) then
                   ! handle situation where CTP less than the lowest midlevel
-                  deltaP = mpressureLevels(2) - mpressureLevels(1) ! The adjacent pressure level
-                  incrP = retrievedCloudTopPressure(i) - mpressureLevels(1) ! distance from the highest midpoint, negative
-                  tempProduct = ta(1) + (ta(2) - ta(1)) * (incrP / deltaP) ! linear interpolation
+                  deltaP = mpressureLevels(2) - mpressureLevels(1) ! The adjacent pressure level, positive
+               !    incrP = retrievedCloudTopPressure(i) - mpressureLevels(1) ! distance from the highest midpoint, negative
+               !    tempProduct = ta(1) + (ta(2) - ta(1)) * (incrP / deltaP) ! linear interpolation
+                  incrP = mpressureLevels(1) - retrievedCloudTopPressure(i) ! distance from the highest midpoint, positive
+                  tempProduct = ta(1) - (ta(2) - ta(1)) * log(incrP / deltaP) ! linear interpolation, switched slope sign so log will work
                   retrievedCloudTopTemp(i) = tempProduct
                   exit
                end if
                if (retrievedCloudTopPressure(i) .gt. mpressureLevels(nLevels)) then
                   ! handle situation where CTP less than the lowest midlevel
-                  deltaP = mpressureLevels(nLevels) - mpressureLevels(nLevels-1) ! The adjacent pressure level
+                  deltaP = mpressureLevels(nLevels) - mpressureLevels(nLevels-1) ! The adjacent pressure level, positive
                   incrP = retrievedCloudTopPressure(i) - mpressureLevels(nLevels) ! distance from the highest midpoint, positive
-                  tempProduct = ta(nLevels) + (ta(nLevels) - ta(nLevels-1)) * (incrP / deltaP) ! linear interpolation
+                  tempProduct = ta(nLevels) + (ta(nLevels) - ta(nLevels-1)) * log(incrP / deltaP) ! linear interpolation
+               !    tempProduct = ta(nLevels) + (ta(nLevels) - ta(nLevels-1)) * (incrP / deltaP) ! linear interpolation
                   retrievedCloudTopTemp(i) = tempProduct
                   exit
                end if
@@ -294,9 +297,9 @@ contains
                retrievedCloudTopPressure(i) .le. mpressureLevels(j)) then ! assume pressure increases with index, moving down
 
                   deltaP = mpressureLevels(j) - mpressureLevels(j-1) ! pressure increases, so this is positive
-                  incrP = retrievedCloudTopPressure(i) - mpressureLevels(j-1) ! 0 if at j-1, deltaP if at j
-                  tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
-               !    tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (log(incrP) / log(deltaP)) ! logarithmic interpolation?
+                  incrP = retrievedCloudTopPressure(i) - mpressureLevels(j-1) ! 0 if at j-1, deltaP if at j, positive
+                  tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * log(incrP / deltaP) ! linear interpolation
+               !    tempProduct = ta(j-1) + (ta(j) - ta(j-1)) * (incrP / deltaP) ! linear interpolation
 
                   retrievedCloudTopTemp(i) = tempProduct
                   exit ! should only exit the inner do loop
