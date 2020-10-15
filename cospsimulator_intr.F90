@@ -96,8 +96,8 @@ module cospsimulator_intr
   real(r8), target :: dbzelim_cosp(2,ndbze_cosp)
   real(r8), target :: htmisrmid_cosp(nhtmisr_cosp)      ! htmisr midpoints of COSP misr simulator output
   real(r8), target :: htmisrlim_cosp(2,nhtmisr_cosp)
-  real(r8), target :: taumid_cosp_modis(ntau_cosp_modis)! optical depth midpoints of COSP MODIS output
-  real(r8), target :: taulim_cosp_modis(2,ntau_cosp_modis)
+  real(r8), target :: taumid_cosp_modis(ntau_cosp_modis)! optical depth midpoints of COSP MODIS output ! JKS
+  real(r8), target :: taulim_cosp_modis(2,ntau_cosp_modis) ! JKS
   real(r8), target :: reffICE_binEdges_cosp(2,numMODISReffIceBins)
   real(r8), target :: reffLIQ_binEdges_cosp(2,numMODISReffLiqBins)
   real(r8), target :: reffICE_binCenters_cosp(numMODISReffIceBins)
@@ -1048,7 +1048,9 @@ CONTAINS
        call addfld ('IWPMODIS',horiz_only,'A','kg m-2','MODIS Cloud Ice Water Path*CLIMODIS',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clmodis ( time, plev, tau, loc )
        call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
-            flag_xyfill=.true., fill_value=R_UNDEF)
+            flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
+       call addfld ('CLMODIS2',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
+            flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
        ! float clrimodis ( time, plev, tau, loc )
        call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1075,7 +1077,8 @@ CONTAINS
        call add_default ('TCTMODIS',cosp_histfile_num,' ') ! JKS
        call add_default ('LWPMODIS',cosp_histfile_num,' ')
        call add_default ('IWPMODIS',cosp_histfile_num,' ')
-       call add_default ('CLMODIS',cosp_histfile_num,' ')
+       call add_default ('CLMODIS',cosp_histfile_num,' ') ! JKS
+       call add_default ('CLMODIS2',cosp_histfile_num,' ') ! JKS
        call add_default ('CLRIMODIS',cosp_histfile_num,' ')
        call add_default ('CLRLMODIS',cosp_histfile_num,' ')
     end if
@@ -1527,8 +1530,10 @@ CONTAINS
     real(r8) :: tctmodis(pcols) ! JKS
     real(r8) :: lwpmodis(pcols)
     real(r8) :: iwpmodis(pcols)
-    real(r8) :: clmodis_cam(pcols,ntau_cosp_modis*nprs_cosp)
+    real(r8) :: clmodis_cam(pcols,ntau_cosp_modis*nprs_cosp) ! JKS
+    real(r8) :: clmodis_cam2(pcols,9) ! JKS new histogram
     real(r8) :: clmodis(pcols,ntau_cosp_modis,nprs_cosp)
+    real(r8) :: clmodis2(pcols,3,3) ! JKS new histogram output
     real(r8) :: clrimodis_cam(pcols,ntau_cosp*numMODISReffIceBins)
     real(r8) :: clrimodis(pcols,ntau_cosp,numMODISReffIceBins)
     real(r8) :: clrlmodis_cam(pcols,ntau_cosp*numMODISReffLiqBins)
@@ -1635,7 +1640,9 @@ CONTAINS
     lwpmodis(1:pcols)                                = R_UNDEF
     iwpmodis(1:pcols)                                = R_UNDEF
     clmodis_cam(1:pcols,1:ntau_cosp_modis*nprs_cosp) = R_UNDEF
-    clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF
+    clmodis_cam2(1:pcols,1:9) = R_UNDEF ! JKS
+    clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF ! JKS histo
+    clmodis2(1:pcols,1:3,1:3)   = R_UNDEF ! JKS histo
     clrimodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffIceBins) = R_UNDEF ! +cosp2
     clrimodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffIceBins)   = R_UNDEF ! +cosp2
     clrlmodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffLiqBins) = R_UNDEF ! +cosp2
@@ -2306,7 +2313,7 @@ CONTAINS
        tctmodis(1:ncol)     = cospOUT%modis_Cloud_Top_Temp_Total_Mean ! JKS
        lwpmodis(1:ncol)     = cospOUT%modis_Liquid_Water_Path_Mean
        iwpmodis(1:ncol)     = cospOUT%modis_Ice_Water_Path_Mean
-       clmodis(1:ncol,1:ntau_cosp_modis,1:nprs_cosp)  = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure 
+       clmodis(1:ncol,1:ntau_cosp_modis,1:nprs_cosp)  = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure ! JKS write in
        clrimodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffIceBins) = cospOUT%modis_Optical_Thickness_vs_ReffICE
        clrlmodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffLiqBins) = cospOUT%modis_Optical_Thickness_vs_ReffLIQ
     endif
@@ -2361,11 +2368,47 @@ CONTAINS
        
        if (lmodis_sim) then
           ! CAM clmodis
+          ! JKS need to compress to alternate histogram bins
+          ! ugly but workable
+         !  clmodis2(i,1,1) = clmodis(i,1,1) + clmodis(i,1,2) + clmodis(i,1,3) + &
+         !                    clmodis(i,2,1) + clmodis(i,2,2) + clmodis(i,2,3) + &
+         !                    clmodis(i,3,1) + clmodis(i,3,2) + clmodis(i,3,3)
+         !  clmodis2(i,2,1) = clmodis(i,4,1) + clmodis(i,4,2) + clmodis(i,4,3) + &
+         !                    clmodis(i,5,1) + clmodis(i,5,2) + clmodis(i,5,3)
+         !  clmodis2(i,3,1) = clmodis(i,6,1) + clmodis(i,6,2) + clmodis(i,6,3) + &
+         !                    clmodis(i,7,1) + clmodis(i,7,2) + clmodis(i,7,3)
+         !  clmodis2(i,1,2) = clmodis(i,1,4) + clmodis(i,2,4) + clmodis(i,3,4) + &
+         !                    clmodis(i,1,5) + clmodis(i,2,5) + clmodis(i,3,5)
+         !  clmodis2(i,2,2) = clmodis(i,4,4) + clmodis(i,5,4) + clmodis(i,4,5) + clmodis(i,5,5)
+         !  clmodis2(i,3,2) = clmodis(i,6,4) + clmodis(i,7,4) + clmodis(i,6,5) + clmodis(i,7,5)
+         !  clmodis2(i,1,3) = clmodis(i,1,6) + clmodis(i,2,6) + clmodis(i,3,6) + &
+         !                    clmodis(i,1,7) + clmodis(i,2,7) + clmodis(i,3,7)
+         !  clmodis2(i,2,3) = clmodis(i,4,6) + clmodis(i,4,7) + clmodis(i,5,6) + clmodis(i,5,7)
+         !  clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
+
+         ! Better summation lines to compress cldmodis
+          clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
+          clmodis2(i,2,1) = SUM(clmodis(i,4:5,1:3))
+          clmodis2(i,3,1) = SUM(clmodis(i,6:7,1:3))
+          clmodis2(i,1,2) = SUM(clmodis(i,1:3,4:5))
+          clmodis2(i,2,2) = SUM(clmodis(i,4:5,4:5))
+          clmodis2(i,3,2) = SUM(clmodis(i,6:7,4:5))
+          clmodis2(i,1,3) = SUM(clmodis(i,1:3,6:7))
+          clmodis2(i,2,3) = SUM(clmodis(i,4:5,6:7))
+          clmodis2(i,3,3) = SUM(clmodis(i,6:7,6:7))
+
           do ip=1,nprs_cosp
              do it=1,ntau_cosp_modis
                 ipt=(ip-1)*ntau_cosp_modis+it
-                clmodis_cam(i,ipt) = clmodis(i,it,ip)
+                clmodis_cam(i,ipt) = clmodis(i,it,ip) ! JKS, don't understand the structure here
              end do
+          end do
+          ! JKS write into CLMODIS2 out-structure
+          do ip=1,3
+            do it=1,3
+               ipt=(ip-1)*3+it ! what is this??
+               clmodis_cam2(i,ipt) = clmodis2(i,it,ip) ! write to alternate histogram
+            end do
           end do
           ! CAM clrimodis
           do ip=1,numMODISReffIceBins
@@ -2639,7 +2682,8 @@ CONTAINS
        end where
        call outfld('IWPMODIS',iwpmodis    ,pcols,lchnk)
        
-       call outfld('CLMODIS',clmodis_cam  ,pcols,lchnk) 
+       call outfld('CLMODIS',clmodis_cam  ,pcols,lchnk) ! JKS
+       call outfld('CLMODIS2',clmodis_cam2  ,pcols,lchnk) ! JKS
        call outfld('CLRIMODIS',clrimodis_cam  ,pcols,lchnk) 
        call outfld('CLRLMODIS',clrlmodis_cam  ,pcols,lchnk) 
     end if
