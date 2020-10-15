@@ -82,30 +82,43 @@ MODULE MOD_COSP_CONFIG
                                          9.4, 9.4, 23.0, 23.0, 60.0, 60.0, 100000.0/),   &
                                          shape=(/2,ntau/)) 
 
+    ! COT = [0, 3.6, 23, 379] ! JKS bins from Olimpia
+
     ! Optical depth bin axes (ONLY USED BY MODIS SIMULATOR IN v1.4)
     integer :: l,k
     integer,parameter :: &
-         ntauV1p4 = 6
+     !     ntauV1p4 = 6
+         ntauV1p4 = 3 ! JKS
     real(wp),parameter,dimension(ntauV1p4+1) :: &
-         tau_binBoundsV1p4 = (/0.3, 1.3, 3.6, 9.4, 23., 60., 10000./)
+     !     tau_binBoundsV1p4 = (/0.3, 1.3, 3.6, 9.4, 23., 60., 10000./)
+         tau_binBoundsV1p4 = (/0.0, 3.6, 23., 379./) ! JKS
     real(wp),parameter,dimension(2,ntauV1p4) :: &
          tau_binEdgesV1p4 = reshape(source =(/tau_binBoundsV1p4(1),((tau_binBoundsV1p4(k),l=1,2),   &
                                              k=2,ntauV1p4),100000._wp/),shape = (/2,ntauV1p4/)) 
     real(wp),parameter,dimension(ntauV1p4) :: &
          tau_binCentersV1p4 = (tau_binEdgesV1p4(1,:)+tau_binEdgesV1p4(2,:))/2._wp  
     
-    ! Cloud-top height pressure bin axis
+
+    ! CTP = [0, 440, 680, 1000]
+
+    ! Cloud-top height pressure bin axis ! JKS
     integer,parameter :: &
-         npres = 7     
+     !     npres = 7     
+         npres = 3     
     real(wp),parameter,dimension(npres+1) :: &
-         pres_binBounds = (/0., 180., 310., 440., 560., 680., 800., 10000./)
+     !     pres_binBounds = (/0., 180., 310., 440., 560., 680., 800., 10000./)
+         pres_binBounds = (/0., 440., 680., 10000./) ! JKS confused by units. Looks like mbar.
     real(wp),parameter,dimension(npres) :: &
-         pres_binCenters = (/90000., 74000., 62000., 50000., 37500., 24500., 9000./)   
+     !     pres_binCenters = (/90000., 74000., 62000., 50000., 37500., 24500., 9000./)   ! JKS Pa?
+         pres_binCenters = (/84000., 56000., 22000./)   
     real(wp),parameter,dimension(2,npres) :: &
-         pres_binEdges = reshape(source=(/100000.0, 80000.0, 80000.0, 68000.0, 68000.0,    &
-                                           56000.0, 56000.0, 44000.0, 44000.0, 31000.0,    &
-                                           31000.0, 18000.0, 18000.0,     0.0/),           &
-                                           shape=(/2,npres/))
+     !     pres_binEdges = reshape(source=(/100000.0, 80000.0, 80000.0, 68000.0, 68000.0,    &
+     !                                       56000.0, 56000.0, 44000.0, 44000.0, 31000.0,    &
+     !                                       31000.0, 18000.0, 18000.0,     0.0/),           &
+     !                                       shape=(/2,npres/))
+           pres_binEdges = reshape(source=(/100000.0, 68000.0, 68000.0,   &
+                                            44000.0, 44000.0, 0.0/),      &
+                                            shape=(/2,npres/))
 
     ! Cloud-top height bin axis #1
     integer,parameter :: &
@@ -221,7 +234,7 @@ MODULE MOD_COSP_CONFIG
          misr_histHgtEdges = hgt_BinEdges     ! Joint-histogram bin edges (cloud height)
  
     ! ####################################################################################
-    ! MODIS simulator tau/CTP joint histogram information 
+    ! MODIS simulator tau/CTP joint histogram information ! JKS
     ! ####################################################################################
     integer,parameter :: &
          numMODISPresBins = npres                    ! Number of pressure bins for joint-histogram    
