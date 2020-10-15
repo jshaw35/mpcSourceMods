@@ -1373,7 +1373,7 @@ CONTAINS
     integer, parameter :: nf_lidar=28                    ! number of lidar outputs !!+cosp1.4
     integer, parameter :: nf_isccp=9                     ! number of isccp outputs
     integer, parameter :: nf_misr=1                      ! number of misr outputs
-    integer, parameter :: nf_modis=20                    ! number of modis outputs ! JKS note
+    integer, parameter :: nf_modis=20                    ! number of modis outputs ! JKS increment?
     
     ! Cloudsat outputs
     character(len=max_fieldname_len),dimension(nf_radar),parameter ::        &
@@ -1401,7 +1401,7 @@ CONTAINS
                        'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
                        'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
                        'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
-                       'CLRLMODIS   '/) ! JKS note
+                       'CLRLMODIS   '/) ! JKS not sure what this does
     
     logical :: run_radar(nf_radar,pcols)                 ! logical telling you if you should run radar simulator
     logical :: run_lidar(nf_lidar,pcols)                 ! logical telling you if you should run lidar simulator
@@ -1531,9 +1531,10 @@ CONTAINS
     real(r8) :: lwpmodis(pcols)
     real(r8) :: iwpmodis(pcols)
     real(r8) :: clmodis_cam(pcols,ntau_cosp_modis*nprs_cosp) ! JKS
-    real(r8) :: clmodis_cam2(pcols,9) ! JKS new histogram
+    real(r8) :: clmodis_cam2(pcols,3*3) ! JKS new histogram
     real(r8) :: clmodis(pcols,ntau_cosp_modis,nprs_cosp)
-    real(r8) :: clmodis2(pcols,3,3) ! JKS new histogram output
+    real(r8) :: clmodis2(pcols,ntau_cosp_modis,nprs_cosp) ! JKS new histogram output
+   !  real(r8) :: clmodis2(pcols,3,3) ! JKS new histogram output
     real(r8) :: clrimodis_cam(pcols,ntau_cosp*numMODISReffIceBins)
     real(r8) :: clrimodis(pcols,ntau_cosp,numMODISReffIceBins)
     real(r8) :: clrlmodis_cam(pcols,ntau_cosp*numMODISReffLiqBins)
@@ -1642,7 +1643,8 @@ CONTAINS
     clmodis_cam(1:pcols,1:ntau_cosp_modis*nprs_cosp) = R_UNDEF
     clmodis_cam2(1:pcols,1:9) = R_UNDEF ! JKS
     clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF ! JKS histo
-    clmodis2(1:pcols,1:3,1:3)   = R_UNDEF ! JKS histo
+    clmodis2(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF ! JKS histo
+   !  clmodis2(1:pcols,1:3,1:3)   = R_UNDEF ! JKS histo
     clrimodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffIceBins) = R_UNDEF ! +cosp2
     clrimodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffIceBins)   = R_UNDEF ! +cosp2
     clrlmodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffLiqBins) = R_UNDEF ! +cosp2
@@ -1688,7 +1690,7 @@ CONTAINS
              run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk,pcols)
           end do
        end if
-       if (lmodis_sim) then ! JKS note
+       if (lmodis_sim) then ! JKS note, don't need to change
           do i=1,nf_modis
              run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk,pcols)
           end do
@@ -2387,29 +2389,30 @@ CONTAINS
          !  clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
 
          ! Better summation lines to compress cldmodis
-          clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
-          clmodis2(i,2,1) = SUM(clmodis(i,4:5,1:3))
-          clmodis2(i,3,1) = SUM(clmodis(i,6:7,1:3))
-          clmodis2(i,1,2) = SUM(clmodis(i,1:3,4:5))
-          clmodis2(i,2,2) = SUM(clmodis(i,4:5,4:5))
-          clmodis2(i,3,2) = SUM(clmodis(i,6:7,4:5))
-          clmodis2(i,1,3) = SUM(clmodis(i,1:3,6:7))
-          clmodis2(i,2,3) = SUM(clmodis(i,4:5,6:7))
-          clmodis2(i,3,3) = SUM(clmodis(i,6:7,6:7))
+         !  clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
+         !  clmodis2(i,2,1) = SUM(clmodis(i,4:5,1:3))
+         !  clmodis2(i,3,1) = SUM(clmodis(i,6:7,1:3))
+         !  clmodis2(i,1,2) = SUM(clmodis(i,1:3,4:5))
+         !  clmodis2(i,2,2) = SUM(clmodis(i,4:5,4:5))
+         !  clmodis2(i,3,2) = SUM(clmodis(i,6:7,4:5))
+         !  clmodis2(i,1,3) = SUM(clmodis(i,1:3,6:7))
+         !  clmodis2(i,2,3) = SUM(clmodis(i,4:5,6:7))
+         !  clmodis2(i,3,3) = SUM(clmodis(i,6:7,6:7))
 
           do ip=1,nprs_cosp
              do it=1,ntau_cosp_modis
                 ipt=(ip-1)*ntau_cosp_modis+it
                 clmodis_cam(i,ipt) = clmodis(i,it,ip) ! JKS, don't understand the structure here
+                clmodis_cam2(i,ipt) = clmodis(i,it,ip) ! JKS just reproduce
              end do
           end do
           ! JKS write into CLMODIS2 out-structure
-          do ip=1,3
-            do it=1,3
-               ipt=(ip-1)*3+it ! what is this??
-               clmodis_cam2(i,ipt) = clmodis2(i,it,ip) ! write to alternate histogram
-            end do
-          end do
+         !  do ip=1,3
+         !     do it=1,3
+         !        ipt=(ip-1)*3+it ! what is this??
+         !        clmodis_cam2(i,ipt) = clmodis2(i,it,ip) ! write to alternate histogram
+         !     end do
+         !  end do
           ! CAM clrimodis
           do ip=1,numMODISReffIceBins
              do it=1,ntau_cosp_modis
@@ -2683,7 +2686,7 @@ CONTAINS
        call outfld('IWPMODIS',iwpmodis    ,pcols,lchnk)
        
        call outfld('CLMODIS',clmodis_cam  ,pcols,lchnk) ! JKS
-       call outfld('CLMODIS2',clmodis_cam2  ,pcols,lchnk) ! JKS
+       call outfld('CLMODIS2',clmodis_cam2  ,pcols,lchnk) ! JKS, error here, has to do with the shape
        call outfld('CLRIMODIS',clrimodis_cam  ,pcols,lchnk) 
        call outfld('CLRLMODIS',clrlmodis_cam  ,pcols,lchnk) 
     end if
