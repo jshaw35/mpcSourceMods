@@ -103,6 +103,12 @@ module cospsimulator_intr
   real(r8), target :: reffICE_binCenters_cosp(numMODISReffIceBins)
   real(r8), target :: reffLIQ_binCenters_cosp(numMODISReffLiqBins)
 
+  integer, parameter :: nhisto = 3
+  real(r8), target :: taubins_midpoints(nhisto) ! JKS
+  real(r8), target :: taubins_bounds(2,nhisto) ! JKS
+  real(r8), target :: presbins_midpoints(nhisto) ! JKS
+  real(r8), target :: presbins_bounds(2,nhisto) ! JKS
+
   real(r8) :: htmlmid_cosp(nhtml_cosp)                     ! Model level height midpoints for output
   integer  :: prstau_cosp(nprs_cosp*ntau_cosp)             ! ISCCP mixed output dimension index
   integer  :: prstau_cosp_modis(nprs_cosp*ntau_cosp_modis) ! MODIS mixed output dimension index
@@ -651,10 +657,13 @@ CONTAINS
 #ifdef USE_COSP
     ! register non-standard variable dimensions
     if (lisccp_sim .or. lmodis_sim) then
+       presbins_midpoints = (/ 220._r8, 560._r8, 840._r8 /) ! JKS declare earlier
+       presbins_bounds(1,:) = (/ 0._r8, 440._r8, 680._r8 /)
+       presbins_bounds(2,:) = (/ 440._r8, 680._r8, 1000._r8 /)
        call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
             'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
-       call add_hist_coord('cosp_prs2', 3, 'COSP Mean ISCCP pressure',  & ! JKS for compressed output
-            'hPa', (/220., 560., 840./), bounds_name='cosp_prs_bnds', bounds=(/0., 440., 680., 1000./))
+       call add_hist_coord('cosp_prs2', nhisto, 'COSP Mean ISCCP pressure',  & ! JKS for compressed output
+            'hPa', presbins_midpoints, bounds_name='cosp_prs_bnds', bounds=presbins_bounds)
     end if
     
     if (lisccp_sim .or. lmisr_sim) then
@@ -699,6 +708,9 @@ CONTAINS
     end if
     
     if (lmodis_sim) then
+       taubins_midpoints = (/ 1.8_r8, 13.3_r8, 201._r8 /) ! JKS declare earlier
+       taubins_bounds(1,:) = (/ 0.0_r8, 3.6_r8, 23._r8 /)
+       taubins_bounds(2,:) = (/ 3.6_r8, 23._r8, 379._r8 /)
        call add_hist_coord('cosp_tau_modis', ntau_cosp_modis,                  &
             'COSP Mean MODIS optical depth', '1', taumid_cosp_modis,           &
             bounds_name='cosp_tau_modis_bnds', bounds=taulim_cosp_modis)
@@ -708,9 +720,9 @@ CONTAINS
        call add_hist_coord('cosp_reffliq',numMODISReffLiqBins,                 &
             'COSP Mean MODIS effective radius (liquid)', 'microns', reffLIQ_binCenters_cosp, &
             bounds_name='cosp_reffliq_bnds',bounds=reffLIQ_binEdges_cosp)    
-       call add_hist_coord('cosp_tau2', 3,                 &
-            'COSP Mean MODIS optical depth (adjusted)', '1', (/1.8, 13.3, 201./), &
-            bounds_name='cosp_tau_modis_bnds_ad',bounds=(/0.0, 3.6, 23., 379./))    
+       call add_hist_coord('cosp_tau2', nhisto,                 &
+            'COSP Mean MODIS optical depth (adjusted)', '1', taubins_midpoints, &
+            bounds_name='cosp_tau_modis_bnds_ad',bounds=taubins_bounds)    
     end if
     
 #endif
@@ -1054,7 +1066,7 @@ CONTAINS
        ! float clmodis ( time, plev, tau, loc )
        call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
-       call addfld ('CLMODIS2',(/'cosp_tau_modis2','cosp_prs2      '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('CLMODIS2',(/'cosp_tau2','cosp_prs2      '/),'A','%','MODIS Cloud Area Fraction (modified)',            &
             flag_xyfill=.true., fill_value=R_UNDEF) ! JKS, calling new history coords
        ! float clrimodis ( time, plev, tau, loc )
        call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
@@ -2375,32 +2387,32 @@ CONTAINS
           ! CAM clmodis
           ! JKS need to compress to alternate histogram bins
           ! ugly but workable
-         !  clmodis2(i,1,1) = clmodis(i,1,1) + clmodis(i,1,2) + clmodis(i,1,3) + &
-         !                    clmodis(i,2,1) + clmodis(i,2,2) + clmodis(i,2,3) + &
-         !                    clmodis(i,3,1) + clmodis(i,3,2) + clmodis(i,3,3)
-         !  clmodis2(i,2,1) = clmodis(i,4,1) + clmodis(i,4,2) + clmodis(i,4,3) + &
-         !                    clmodis(i,5,1) + clmodis(i,5,2) + clmodis(i,5,3)
-         !  clmodis2(i,3,1) = clmodis(i,6,1) + clmodis(i,6,2) + clmodis(i,6,3) + &
-         !                    clmodis(i,7,1) + clmodis(i,7,2) + clmodis(i,7,3)
-         !  clmodis2(i,1,2) = clmodis(i,1,4) + clmodis(i,2,4) + clmodis(i,3,4) + &
-         !                    clmodis(i,1,5) + clmodis(i,2,5) + clmodis(i,3,5)
-         !  clmodis2(i,2,2) = clmodis(i,4,4) + clmodis(i,5,4) + clmodis(i,4,5) + clmodis(i,5,5)
-         !  clmodis2(i,3,2) = clmodis(i,6,4) + clmodis(i,7,4) + clmodis(i,6,5) + clmodis(i,7,5)
-         !  clmodis2(i,1,3) = clmodis(i,1,6) + clmodis(i,2,6) + clmodis(i,3,6) + &
-         !                    clmodis(i,1,7) + clmodis(i,2,7) + clmodis(i,3,7)
-         !  clmodis2(i,2,3) = clmodis(i,4,6) + clmodis(i,4,7) + clmodis(i,5,6) + clmodis(i,5,7)
-         !  clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
+          clmodis2(i,1,1) = clmodis(i,1,1) + clmodis(i,1,2) + clmodis(i,1,3) + &
+                            clmodis(i,2,1) + clmodis(i,2,2) + clmodis(i,2,3) + &
+                            clmodis(i,3,1) + clmodis(i,3,2) + clmodis(i,3,3)
+          clmodis2(i,2,1) = clmodis(i,4,1) + clmodis(i,4,2) + clmodis(i,4,3) + &
+                            clmodis(i,5,1) + clmodis(i,5,2) + clmodis(i,5,3)
+          clmodis2(i,3,1) = clmodis(i,6,1) + clmodis(i,6,2) + clmodis(i,6,3) + &
+                            clmodis(i,7,1) + clmodis(i,7,2) + clmodis(i,7,3)
+          clmodis2(i,1,2) = clmodis(i,1,4) + clmodis(i,2,4) + clmodis(i,3,4) + &
+                            clmodis(i,1,5) + clmodis(i,2,5) + clmodis(i,3,5)
+          clmodis2(i,2,2) = clmodis(i,4,4) + clmodis(i,5,4) + clmodis(i,4,5) + clmodis(i,5,5)
+          clmodis2(i,3,2) = clmodis(i,6,4) + clmodis(i,7,4) + clmodis(i,6,5) + clmodis(i,7,5)
+          clmodis2(i,1,3) = clmodis(i,1,6) + clmodis(i,2,6) + clmodis(i,3,6) + &
+                            clmodis(i,1,7) + clmodis(i,2,7) + clmodis(i,3,7)
+          clmodis2(i,2,3) = clmodis(i,4,6) + clmodis(i,4,7) + clmodis(i,5,6) + clmodis(i,5,7)
+          clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
 
          ! Better summation lines to compress cldmodis
-          clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
-          clmodis2(i,2,1) = SUM(clmodis(i,4:5,1:3))
-          clmodis2(i,3,1) = SUM(clmodis(i,6:7,1:3))
-          clmodis2(i,1,2) = SUM(clmodis(i,1:3,4:5))
-          clmodis2(i,2,2) = SUM(clmodis(i,4:5,4:5))
-          clmodis2(i,3,2) = SUM(clmodis(i,6:7,4:5))
-          clmodis2(i,1,3) = SUM(clmodis(i,1:3,6:7))
-          clmodis2(i,2,3) = SUM(clmodis(i,4:5,6:7))
-          clmodis2(i,3,3) = SUM(clmodis(i,6:7,6:7))
+         !  clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
+         !  clmodis2(i,2,1) = SUM(clmodis(i,4:5,1:3))
+         !  clmodis2(i,3,1) = SUM(clmodis(i,6:7,1:3))
+         !  clmodis2(i,1,2) = SUM(clmodis(i,1:3,4:5))
+         !  clmodis2(i,2,2) = SUM(clmodis(i,4:5,4:5))
+         !  clmodis2(i,3,2) = SUM(clmodis(i,6:7,4:5))
+         !  clmodis2(i,1,3) = SUM(clmodis(i,1:3,6:7))
+         !  clmodis2(i,2,3) = SUM(clmodis(i,4:5,6:7))
+         !  clmodis2(i,3,3) = SUM(clmodis(i,6:7,6:7))
 
           do ip=1,nprs_cosp
              do it=1,ntau_cosp_modis
