@@ -1023,6 +1023,8 @@ CONTAINS
        ! float clwmodis ( time, loc )
        call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float climodis ( time, loc )
+       call addfld ('SLFMODIS',horiz_only,'A','%','MODIS-SLF (CLWMODIS/CLTMODIS)',flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
+       ! float climodis ( time, loc )
        call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clhmodis ( time, loc )
        call addfld ('CLHMODIS',horiz_only,'A','%','MODIS High Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1078,6 +1080,7 @@ CONTAINS
        !! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CLTMODIS',cosp_histfile_num,' ')
        call add_default ('CLWMODIS',cosp_histfile_num,' ')
+       call add_default ('SLFMODIS',cosp_histfile_num,' ') ! JKS
        call add_default ('CLIMODIS',cosp_histfile_num,' ')
        call add_default ('CLHMODIS',cosp_histfile_num,' ')
        call add_default ('CLMMODIS',cosp_histfile_num,' ')
@@ -1531,6 +1534,7 @@ CONTAINS
     real(r8) :: scops_out(pcols,nhtml_cosp*nscol_cosp)   ! CAM frac_out (time,height_mlev,column,profile)
     real(r8) :: cltmodis(pcols)
     real(r8) :: clwmodis(pcols)
+    real(r8) :: slfmodis(pcols) ! JKS
     real(r8) :: climodis(pcols)
     real(r8) :: clhmodis(pcols)
     real(r8) :: clmmodis(pcols)
@@ -1640,6 +1644,7 @@ CONTAINS
     scops_out(1:pcols,1:nhtml_cosp*nscol_cosp)       = R_UNDEF
     cltmodis(1:pcols)                                = R_UNDEF
     clwmodis(1:pcols)                                = R_UNDEF
+    slfmodis(1:pcols)                                = R_UNDEF
     climodis(1:pcols)                                = R_UNDEF
     clhmodis(1:pcols)                                = R_UNDEF
     clmmodis(1:pcols)                                = R_UNDEF
@@ -2314,6 +2319,7 @@ CONTAINS
     if (lmodis_sim) then
        cltmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Total_Mean
        clwmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Water_Mean
+       slfmodis(1:ncol)     = clwmodis(1:ncol) / cltmodis(1:ncol)
        climodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Ice_Mean
        clhmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_High_Mean
        clmmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Mid_Mean
@@ -2601,6 +2607,7 @@ CONTAINS
     if (lmodis_sim) then
        call outfld('CLTMODIS',cltmodis    ,pcols,lchnk)
        call outfld('CLWMODIS',clwmodis    ,pcols,lchnk)
+       call outfld('SLFMODIS',slfmodis    ,pcols,lchnk)
        call outfld('CLIMODIS',climodis    ,pcols,lchnk)
        call outfld('CLHMODIS',clhmodis    ,pcols,lchnk)
        call outfld('CLMMODIS',clmmodis    ,pcols,lchnk)
