@@ -2393,21 +2393,21 @@ CONTAINS
           ! CAM clmodis
           ! JKS need to compress to alternate histogram bins
           ! ugly but workable
-          clmodis2(i,1,1) = clmodis(i,1,1) + clmodis(i,1,2) + clmodis(i,1,3) + &
-                            clmodis(i,2,1) + clmodis(i,2,2) + clmodis(i,2,3) + &
-                            clmodis(i,3,1) + clmodis(i,3,2) + clmodis(i,3,3)
-          clmodis2(i,2,1) = clmodis(i,4,1) + clmodis(i,4,2) + clmodis(i,4,3) + &
-                            clmodis(i,5,1) + clmodis(i,5,2) + clmodis(i,5,3)
-          clmodis2(i,3,1) = clmodis(i,6,1) + clmodis(i,6,2) + clmodis(i,6,3) + &
-                            clmodis(i,7,1) + clmodis(i,7,2) + clmodis(i,7,3)
-          clmodis2(i,1,2) = clmodis(i,1,4) + clmodis(i,2,4) + clmodis(i,3,4) + &
-                            clmodis(i,1,5) + clmodis(i,2,5) + clmodis(i,3,5)
-          clmodis2(i,2,2) = clmodis(i,4,4) + clmodis(i,5,4) + clmodis(i,4,5) + clmodis(i,5,5)
-          clmodis2(i,3,2) = clmodis(i,6,4) + clmodis(i,7,4) + clmodis(i,6,5) + clmodis(i,7,5)
-          clmodis2(i,1,3) = clmodis(i,1,6) + clmodis(i,2,6) + clmodis(i,3,6) + &
-                            clmodis(i,1,7) + clmodis(i,2,7) + clmodis(i,3,7)
-          clmodis2(i,2,3) = clmodis(i,4,6) + clmodis(i,4,7) + clmodis(i,5,6) + clmodis(i,5,7)
-          clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
+         !  clmodis2(i,1,1) = clmodis(i,1,1) + clmodis(i,1,2) + clmodis(i,1,3) + &
+         !                    clmodis(i,2,1) + clmodis(i,2,2) + clmodis(i,2,3) + &
+         !                    clmodis(i,3,1) + clmodis(i,3,2) + clmodis(i,3,3)
+         !  clmodis2(i,2,1) = clmodis(i,4,1) + clmodis(i,4,2) + clmodis(i,4,3) + &
+         !                    clmodis(i,5,1) + clmodis(i,5,2) + clmodis(i,5,3)
+         !  clmodis2(i,3,1) = clmodis(i,6,1) + clmodis(i,6,2) + clmodis(i,6,3) + &
+         !                    clmodis(i,7,1) + clmodis(i,7,2) + clmodis(i,7,3)
+         !  clmodis2(i,1,2) = clmodis(i,1,4) + clmodis(i,2,4) + clmodis(i,3,4) + &
+         !                    clmodis(i,1,5) + clmodis(i,2,5) + clmodis(i,3,5)
+         !  clmodis2(i,2,2) = clmodis(i,4,4) + clmodis(i,5,4) + clmodis(i,4,5) + clmodis(i,5,5)
+         !  clmodis2(i,3,2) = clmodis(i,6,4) + clmodis(i,7,4) + clmodis(i,6,5) + clmodis(i,7,5)
+         !  clmodis2(i,1,3) = clmodis(i,1,6) + clmodis(i,2,6) + clmodis(i,3,6) + &
+         !                    clmodis(i,1,7) + clmodis(i,2,7) + clmodis(i,3,7)
+         !  clmodis2(i,2,3) = clmodis(i,4,6) + clmodis(i,4,7) + clmodis(i,5,6) + clmodis(i,5,7)
+         !  clmodis2(i,3,3) = clmodis(i,6,6) + clmodis(i,6,7) + clmodis(i,7,6) + clmodis(i,7,7)
 
          ! Better summation lines to compress cldmodis
          !  clmodis2(i,1,1) = SUM(clmodis(i,1:3,1:3))
@@ -2426,13 +2426,35 @@ CONTAINS
                 clmodis_cam(i,ipt) = clmodis(i,it,ip) ! JKS, don't understand the structure here
              end do
           end do
+          ! manually assign cldmodis_cam2 here
+          clmodis_cam2(i,1) = clmodis_cam(i,1) + clmodis_cam(i,2) + clmodis_cam(i,3) + &
+                              clmodis_cam(i,8) + clmodis_cam(i,9) + clmodis_cam(i,10) + &
+                              clmodis_cam(i,15) + clmodis_cam(i,16) + clmodis_cam(i,17)
+          clmodis_cam2(i,2) = clmodis_cam(i,4) + clmodis_cam(i,5) + &
+                              clmodis_cam(i,11) + clmodis_cam(i,12) + &
+                              clmodis_cam(i,18) + clmodis_cam(i,19)
+          clmodis_cam2(i,3) = clmodis_cam(i,6) + clmodis_cam(i,7) + &
+                              clmodis_cam(i,13) + clmodis_cam(i,14) + &
+                              clmodis_cam(i,20) + clmodis_cam(i,21)
+          clmodis_cam2(i,4) = clmodis_cam(i,22) + clmodis_cam(i,23) + clmodis_cam(i,24) + &
+                              clmodis_cam(i,29) + clmodis_cam(i,30) + clmodis_cam(i,31)
+          clmodis_cam2(i,5) = clmodis_cam(i,25) + clmodis_cam(i,26) + &
+                              clmodis_cam(i,32) + clmodis_cam(i,33)
+          clmodis_cam2(i,6) = clmodis_cam(i,27) + clmodis_cam(i,28) + &
+                              clmodis_cam(i,34) + clmodis_cam(i,35)
+          clmodis_cam2(i,7) = clmodis_cam(i,36) + clmodis_cam(i,37) + clmodis_cam(i,38) + &
+                              clmodis_cam(i,43) + clmodis_cam(i,44) + clmodis_cam(i,45)
+          clmodis_cam2(i,8) = clmodis_cam(i,39) + clmodis_cam(i,40) + &
+                              clmodis_cam(i,46) + clmodis_cam(i,47)
+          clmodis_cam2(i,9) = clmodis_cam(i,41) + clmodis_cam(i,42) + &
+                              clmodis_cam(i,48) + clmodis_cam(i,49)
           ! JKS write into CLMODIS2 out-structure
-          do ip=1,3
-            do it=1,3
-               ipt=(ip-1)*3+it ! what is this??
-               clmodis_cam2(i,ipt) = clmodis2(i,it,ip) ! write to alternate histogram
-            end do
-          end do
+         !  do ip=1,3
+         !    do it=1,3
+         !       ipt=(ip-1)*3+it ! what is this??
+         !       clmodis_cam2(i,ipt) = clmodis2(i,it,ip) ! write to alternate histogram
+         !    end do
+         !  end do
           ! CAM clrimodis
           do ip=1,numMODISReffIceBins
              do it=1,ntau_cosp_modis
