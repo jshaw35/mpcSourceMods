@@ -1023,7 +1023,7 @@ CONTAINS
        ! float clwmodis ( time, loc )
        call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float climodis ( time, loc )
-       call addfld ('SLFMODIS',horiz_only,'A','%','MODIS-SLF (CLWMODIS/CLTMODIS)',flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
+      !  call addfld ('SLFMODIS',horiz_only,'A','%','MODIS-SLF (CLWMODIS/CLTMODIS)',flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
        ! float slfmodis ( time, loc )
        call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clhmodis ( time, loc )
@@ -1068,8 +1068,8 @@ CONTAINS
        ! float clmodis ( time, plev, tau, loc )
        call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
-       call addfld ('CLMODIS2',(/'cosp_tau2','cosp_prs2      '/),'A','%','MODIS Cloud Area Fraction (modified)',            &
-            flag_xyfill=.true., fill_value=R_UNDEF) ! JKS, calling new history coords
+      !  call addfld ('CLMODIS2',(/'cosp_tau2','cosp_prs2      '/),'A','%','MODIS Cloud Area Fraction (modified)',            &
+            ! flag_xyfill=.true., fill_value=R_UNDEF) ! JKS, calling new history coords
        ! float clrimodis ( time, plev, tau, loc )
        call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1080,7 +1080,7 @@ CONTAINS
        !! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CLTMODIS',cosp_histfile_num,' ')
        call add_default ('CLWMODIS',cosp_histfile_num,' ')
-       call add_default ('SLFMODIS',cosp_histfile_num,' ') ! JKS
+      !  call add_default ('SLFMODIS',cosp_histfile_num,' ') ! JKS
        call add_default ('CLIMODIS',cosp_histfile_num,' ')
        call add_default ('CLHMODIS',cosp_histfile_num,' ')
        call add_default ('CLMMODIS',cosp_histfile_num,' ')
@@ -1098,7 +1098,7 @@ CONTAINS
        call add_default ('LWPMODIS',cosp_histfile_num,' ')
        call add_default ('IWPMODIS',cosp_histfile_num,' ')
        call add_default ('CLMODIS',cosp_histfile_num,' ') ! JKS
-       call add_default ('CLMODIS2',cosp_histfile_num,' ') ! JKS
+      !  call add_default ('CLMODIS2',cosp_histfile_num,' ') ! JKS
        call add_default ('CLRIMODIS',cosp_histfile_num,' ')
        call add_default ('CLRLMODIS',cosp_histfile_num,' ')
     end if
@@ -1534,7 +1534,7 @@ CONTAINS
     real(r8) :: scops_out(pcols,nhtml_cosp*nscol_cosp)   ! CAM frac_out (time,height_mlev,column,profile)
     real(r8) :: cltmodis(pcols)
     real(r8) :: clwmodis(pcols)
-    real(r8) :: slfmodis(pcols) ! JKS
+   !  real(r8) :: slfmodis(pcols) ! JKS
     real(r8) :: climodis(pcols)
     real(r8) :: clhmodis(pcols)
     real(r8) :: clmmodis(pcols)
@@ -1552,9 +1552,9 @@ CONTAINS
     real(r8) :: lwpmodis(pcols)
     real(r8) :: iwpmodis(pcols)
     real(r8) :: clmodis_cam(pcols,ntau_cosp_modis*nprs_cosp) ! JKS
-    real(r8) :: clmodis_cam2(pcols,9) ! JKS new histogram
+   !  real(r8) :: clmodis_cam2(pcols,9) ! JKS new histogram
     real(r8) :: clmodis(pcols,ntau_cosp_modis,nprs_cosp)
-    real(r8) :: clmodis2(pcols,3,3) ! JKS new histogram output
+   !  real(r8) :: clmodis2(pcols,3,3) ! JKS new histogram output
     real(r8) :: clrimodis_cam(pcols,ntau_cosp*numMODISReffIceBins)
     real(r8) :: clrimodis(pcols,ntau_cosp,numMODISReffIceBins)
     real(r8) :: clrlmodis_cam(pcols,ntau_cosp*numMODISReffLiqBins)
@@ -1644,7 +1644,7 @@ CONTAINS
     scops_out(1:pcols,1:nhtml_cosp*nscol_cosp)       = R_UNDEF
     cltmodis(1:pcols)                                = R_UNDEF
     clwmodis(1:pcols)                                = R_UNDEF
-    slfmodis(1:pcols)                                = R_UNDEF
+   !  slfmodis(1:pcols)                                = R_UNDEF
     climodis(1:pcols)                                = R_UNDEF
     clhmodis(1:pcols)                                = R_UNDEF
     clmmodis(1:pcols)                                = R_UNDEF
@@ -1662,9 +1662,9 @@ CONTAINS
     lwpmodis(1:pcols)                                = R_UNDEF
     iwpmodis(1:pcols)                                = R_UNDEF
     clmodis_cam(1:pcols,1:ntau_cosp_modis*nprs_cosp) = R_UNDEF
-    clmodis_cam2(1:pcols,1:9) = R_UNDEF ! JKS
+   !  clmodis_cam2(1:pcols,1:9) = R_UNDEF ! JKS
     clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF ! JKS histo
-    clmodis2(1:pcols,1:3,1:3)   = R_UNDEF ! JKS histo
+   !  clmodis2(1:pcols,1:3,1:3)   = R_UNDEF ! JKS histo
     clrimodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffIceBins) = R_UNDEF ! +cosp2
     clrimodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffIceBins)   = R_UNDEF ! +cosp2
     clrlmodis_cam(1:pcols,1:ntau_cosp_modis*numMODISReffLiqBins) = R_UNDEF ! +cosp2
@@ -2319,7 +2319,7 @@ CONTAINS
     if (lmodis_sim) then
        cltmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Total_Mean
        clwmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Water_Mean
-       slfmodis(1:ncol)     = clwmodis / cltmodis
+      !  slfmodis(1:ncol)     = clwmodis / cltmodis
        climodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Ice_Mean
        clhmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_High_Mean
        clmmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Mid_Mean
@@ -2629,7 +2629,7 @@ CONTAINS
     if (lmodis_sim) then
        call outfld('CLTMODIS',cltmodis    ,pcols,lchnk)
        call outfld('CLWMODIS',clwmodis    ,pcols,lchnk)
-       call outfld('SLFMODIS',slfmodis    ,pcols,lchnk)
+      !  call outfld('SLFMODIS',slfmodis    ,pcols,lchnk)
        call outfld('CLIMODIS',climodis    ,pcols,lchnk)
        call outfld('CLHMODIS',clhmodis    ,pcols,lchnk)
        call outfld('CLMMODIS',clmmodis    ,pcols,lchnk)
@@ -2729,7 +2729,7 @@ CONTAINS
        call outfld('IWPMODIS',iwpmodis    ,pcols,lchnk)
        
        call outfld('CLMODIS',clmodis_cam  ,pcols,lchnk) ! JKS
-       call outfld('CLMODIS2',clmodis_cam2  ,pcols,lchnk) ! JKS
+      !  call outfld('CLMODIS2',clmodis_cam2  ,pcols,lchnk) ! JKS
        call outfld('CLRIMODIS',clrimodis_cam  ,pcols,lchnk) 
        call outfld('CLRLMODIS',clrlmodis_cam  ,pcols,lchnk) 
     end if
