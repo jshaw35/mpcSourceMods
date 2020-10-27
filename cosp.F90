@@ -233,7 +233,7 @@ MODULE MOD_COSP
           modis_Liquid_Water_Path_Mean => null(),          & ! L3 MODIS retrieved liquid water path
           modis_Ice_Water_Path_Mean => null()                ! L3 MODIS retrieved ice water path
      real(wp),pointer,dimension(:,:,:) ::  &
-          modis_Optical_Thickness_vs_Cloud_Top_Pressure => null(), & ! Tau/Pressure joint histogram
+          modis_Optical_Thickness_vs_Cloud_Top_Pressure => null(), & ! Tau/Pressure joint histogram ! JKS
           modis_Optical_Thickness_vs_ReffICE => null(),            & ! Tau/ReffICE joint histogram
           modis_Optical_Thickness_vs_ReffLIQ => null()               ! Tau/ReffLIQ joint histogram
 
@@ -376,7 +376,7 @@ CONTAINS
         associated(cospOUT%modis_Cloud_Top_Temp_Total_Mean)                .or.          & ! JKS
         associated(cospOUT%modis_Liquid_Water_Path_Mean)                   .or.          &
         associated(cospOUT%modis_Ice_Water_Path_Mean)                      .or.          &
-        associated(cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure))               &
+        associated(cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure))               & ! JKS, should syntax fail?
        Lmodis_subcolumn    = .true.
 
     ! ISCCP subcolumn
@@ -983,7 +983,7 @@ CONTAINS
                    modisMeanCloudTopTemp(modisIN%nSunlit),                               & ! JKS, allocate space
                    modisMeanLiquidWaterPath(modisIN%nSunlit),                            &
                    modisMeanIceWaterPath(modisIN%nSunlit),                               &
-                   modisJointHistogram(modisIN%nSunlit,numMODISTauBins,numMODISPresBins),&
+                   modisJointHistogram(modisIN%nSunlit,numMODISTauBins,numMODISPresBins),& ! JKS, number of columns, tau, pres
                    modisJointHistogramIce(modisIN%nSunlit,numModisTauBins,numMODISReffIceBins),&
                    modisJointHistogramLiq(modisIN%nSunlit,numModisTauBins,numMODISReffLiqBins))
           ! Call simulator
@@ -997,7 +997,7 @@ CONTAINS
                              modisMeanSizeLiquid, modisMeanSizeIce,                      &
                              modisMeanCloudTopPressure, modisMeanLiquidWaterPath,        & ! JKS, grid output for cosp
                              modisMeanCloudTopTemp,                                      & ! JKS, grid output for cosp
-                             modisMeanIceWaterPath, modisJointHistogram,                 &
+                             modisMeanIceWaterPath, modisJointHistogram,                 & ! JKS tau-pres histo
                              modisJointHistogramIce,modisJointHistogramLiq)
           ! Store data (if requested)
           if (associated(cospOUT%modis_Cloud_Fraction_Total_Mean)) then
@@ -1072,8 +1072,8 @@ CONTAINS
           endif
           if (associated(cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure)) then
              cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(ij+            &
-                  int(modisIN%sunlit(:))-1, 1:numModisTauBins, :) = modisJointHistogram(:, :, :)
-             ! Reorder pressure bins in joint histogram to go from surface to TOA
+                  int(modisIN%sunlit(:))-1, 1:numModisTauBins, :) = modisJointHistogram(:, :, :) ! JKS, indexing weird, ij is the first column index
+             ! Reorder pressure bins in joint histogram to go from surface to TOA ! JKS confused, but this means pres goes high to low
              cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(ij:ik,:,:) = &
                   cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(ij:ik,:,numMODISPresBins:1:-1)
           endif

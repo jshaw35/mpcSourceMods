@@ -663,7 +663,7 @@ CONTAINS
        call add_hist_coord('cosp_prs', nprs_cosp, 'COSP Mean ISCCP pressure',  &
             'hPa', prsmid_cosp, bounds_name='cosp_prs_bnds', bounds=prslim_cosp)
        call add_hist_coord('cosp_prs2', nhisto, 'COSP Mean ISCCP pressure',  & ! JKS for compressed output
-            'hPa', presbins_midpoints, bounds_name='cosp_prs_bnds', bounds=presbins_bounds)
+            'hPa', presbins_midpoints, bounds_name='cosp_prs_bnds2', bounds=presbins_bounds) ! JKS fix
     end if
     
     if (lisccp_sim .or. lmisr_sim) then
@@ -722,7 +722,7 @@ CONTAINS
             bounds_name='cosp_reffliq_bnds',bounds=reffLIQ_binEdges_cosp)    
        call add_hist_coord('cosp_tau2', nhisto,                 &
             'COSP Mean MODIS optical depth (adjusted)', '1', taubins_midpoints, &
-            bounds_name='cosp_tau_modis_bnds_ad',bounds=taubins_bounds)    
+            bounds_name='cosp_tau_modis_bnds2',bounds=taubins_bounds)    
     end if
     
 #endif
@@ -1024,7 +1024,7 @@ CONTAINS
        call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float climodis ( time, loc )
        call addfld ('SLFMODIS',horiz_only,'A','%','MODIS-SLF (CLWMODIS/CLTMODIS)',flag_xyfill=.true., fill_value=R_UNDEF) ! JKS
-       ! float climodis ( time, loc )
+       ! float slfmodis ( time, loc )
        call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clhmodis ( time, loc )
        call addfld ('CLHMODIS',horiz_only,'A','%','MODIS High Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
@@ -2319,7 +2319,7 @@ CONTAINS
     if (lmodis_sim) then
        cltmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Total_Mean
        clwmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Water_Mean
-       slfmodis(1:ncol)     = clwmodis(1:ncol) / cltmodis(1:ncol)
+       slfmodis(1:ncol)     = clwmodis / cltmodis
        climodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Ice_Mean
        clhmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_High_Mean
        clmmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Mid_Mean
